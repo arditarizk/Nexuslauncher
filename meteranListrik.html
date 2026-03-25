@@ -1,0 +1,651 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart Energy Tracker</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { dark: '#0f172a', neon: '#38bdf8', accent: '#818cf8' }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0f172a;
+            background-image: radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(129, 140, 248, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #e2e8f0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-card { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1.5rem; }
+        .input-glow:focus { outline: none; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); border-color: #38bdf8; }
+        ::-webkit-scrollbar { width: 0px; }
+        .chart-container { position: relative; height: 250px; width: 100%; }
+    </style>
+</head>
+<body class="min-h-screen pb-24">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-40 glass-card !rounded-none !border-x-0 !border-t-0 bg-opacity-80">
+        <div class="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="bi bi-lightning-charge-fill text-yellow-400 text-xl"></i>
+                <h1 class="font-bold text-lg tracking-wide">Energy<span class="text-neon font-light">Tracker</span></h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="syncStatus" class="text-[10px] font-mono px-2 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700">
+                    Menunggu...
+                </span>
+                <button onclick="openSettings()" class="p-2 rounded-full hover:bg-white/10 transition-colors text-gray-300">
+                    <i class="bi bi-gear-fill text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto px-4 pt-24 space-y-6">
+
+        <!-- Main Display Card -->
+        <div class="glass-card p-6 relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10"><i class="bi bi-cpu text-6xl"></i></div>
+            
+            <div class="text-center mb-6">
+                <p class="text-gray-400 text-xs uppercase tracking-widest mb-1">Total Estimasi Tagihan</p>
+                <h2 id="displayTotal" class="text-4xl font-mono font-bold text-white tracking-tighter">Rp 0</h2>
+                <div class="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                    <i class="bi bi-lightning-fill text-yellow-400 text-xs"></i>
+                    <span id="displayPemakaian" class="text-xs font-mono text-neon">0 kWh</span>
+                </div>
+            </div>
+
+            <!-- Input Section -->
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs text-gray-400 ml-1">Meteran Saat Ini (Bulan Ini)</label>
+                    <div class="relative mt-1">
+                        <input type="number" id="inputCurrent" placeholder="0000" 
+                            class="w-full bg-dark/50 border border-gray-600 rounded-xl px-4 py-4 text-3xl font-mono text-white input-glow transition-all"
+                            oninput="calculate()">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-gray-400 ml-1">Meteran Bulan Lalu</label>
+                        <input type="number" id="inputPrevious" readonly 
+                            class="w-full mt-1 bg-dark/30 border border-gray-700 rounded-lg px-3 py-3 text-sm font-mono text-gray-500 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 ml-1">Tanggal Mulai</label>
+                        <input type="date" id="inputDate" 
+                            class="w-full mt-1 bg-dark/30 border border-gray-700 rounded-lg px-3 py-3 text-sm text-gray-300 focus:bg-dark/50"
+                            onchange="calculate()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add-ons (Toppings) -->
+        <div class="glass-card p-5">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                    <i class="bi bi-receipt"></i> Biaya Tambahan
+                </h3>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500">Semua</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggleAllAddons" class="sr-only peer" onchange="toggleAllAddons(this)">
+                        <div class="w-7 h-4 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-neon"></div>
+                    </label>
+                </div>
+            </div>
+            <div class="space-y-2" id="addonsContainer">
+                <!-- Addons via JS -->
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="grid grid-cols-2 gap-3">
+            <button id="btnSave" onclick="saveRecord()" class="glass-card p-3 flex items-center justify-center gap-2 hover:bg-blue-600/20 hover:border-blue-500/50 transition-all group active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="bi bi-save text-blue-400 group-hover:text-blue-300"></i>
+                <span class="text-sm font-semibold text-blue-100">Simpan Data</span>
+            </button>
+            <button onclick="shareBill()" class="glass-card p-3 flex items-center justify-center gap-2 hover:bg-green-600/20 hover:border-green-500/50 transition-all group active:scale-95">
+                <i class="bi bi-whatsapp text-green-400 group-hover:text-green-300"></i>
+                <span class="text-sm font-semibold text-green-100">Bagikan WA</span>
+            </button>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="glass-card p-5">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-sm font-semibold text-gray-300">Riwayat Pemakaian</h3>
+                <button onclick="clearHistory()" class="text-xs text-red-400 hover:text-red-300 transition-colors">
+                    <i class="bi bi-trash"></i> Reset Semua
+                </button>
+            </div>
+            <div class="chart-container">
+                <canvas id="usageChart"></canvas>
+            </div>
+        </div>
+
+        <!-- History Detail Section (NEW) -->
+        <div class="glass-card p-5">
+            <h3 class="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                <i class="bi bi-list-ul"></i> Detail Tagihan Terakhir
+            </h3>
+            <div id="historyDetailsList" class="space-y-3">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeSettings()"></div>
+        <div class="absolute bottom-0 w-full glass-card !rounded-b-none p-6 animate-slide-up max-h-[85vh] overflow-y-auto bg-slate-900">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white">Pengaturan Sistem</h3>
+                <button onclick="closeSettings()" class="p-2 rounded-full hover:bg-white/10">
+                    <i class="bi bi-x-lg text-white"></i>
+                </button>
+            </div>
+
+            <div class="space-y-5">
+                <!-- URL Google Sheet dengan Dropdown History -->
+                <div>
+                    <label class="block text-sm text-neon mb-1 font-semibold">URL Google Sheet (Apps Script)</label>
+                    <p class="text-[10px] text-gray-400 mb-2">Deploy sebagai Web App (Anyone).</p>
+                    <div class="relative">
+                        <input type="url" id="settingUrl" placeholder="https://script.google.com/macros/s/..." 
+                            class="w-full bg-dark border border-gray-600 rounded-lg px-4 py-3 text-sm text-white focus:border-neon outline-none"
+                            onfocus="showUrlHistory()" autocomplete="off">
+                        
+                        <div id="urlHistoryDropdown" class="hidden absolute top-full left-0 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl overflow-hidden z-50">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarif Dasar -->
+                <div>
+                    <label class="block text-sm text-neon mb-1 font-semibold">Tarif Listrik per kWh</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-mono">Rp</span>
+                        <input type="number" id="settingRate" class="w-full bg-dark border border-gray-600 rounded-lg pl-12 pr-4 py-3 text-white focus:border-neon outline-none">
+                    </div>
+                </div>
+
+                <!-- Set Awal Meteran -->
+                <div id="initialMeterContainer" class="hidden">
+                    <label class="block text-sm text-neon mb-1 font-semibold">Set Angka Meteran Awal</label>
+                    <p class="text-[10px] text-gray-400 mb-2">Karena riwayat kosong, set angka bulan lalu di sini.</p>
+                    <input type="number" id="settingInitialMeter" class="w-full bg-dark border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-neon outline-none" placeholder="0">
+                </div>
+
+                <button onclick="saveSettings()" class="w-full py-4 mt-4 bg-white text-dark font-bold rounded-xl hover:bg-gray-200 transition-colors">
+                    Simpan Pengaturan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- KONFIGURASI DEFAULT ---
+        const DEFAULT_CONFIG = {
+            webAppUrl: '',
+            rate: 2500,
+            initialMeter: 0,
+            addons: [
+                { id: 'kos', name: 'Biaya Kos', price: 350000, active: true },
+                { id: 'wifi', name: 'Internet / WiFi', price: 100000, active: false },
+                { id: 'sampah', name: 'Iuran Sampah', price: 5000, active: true },
+                { id: 'rt', name: 'Iuran RT', price: 10000, active: true },
+                { id: 'lain', name: 'Lain-lain', price: 10000, active: true }
+            ]
+        };
+
+        let appConfig = JSON.parse(localStorage.getItem('st_config')) || JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        let historyData = JSON.parse(localStorage.getItem('st_history')) || [];
+        let syncQueue = JSON.parse(localStorage.getItem('st_queue')) || [];
+        let urlHistory = JSON.parse(localStorage.getItem('st_url_history')) || [];
+        let chartInstance = null;
+        let isSyncing = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderAddonsUI();
+            
+            // Set input meteran lalu otomatis
+            const lastRecord = historyData[historyData.length - 1];
+            if (lastRecord) {
+                document.getElementById('inputPrevious').value = lastRecord.meteranSekarang;
+            } else {
+                document.getElementById('inputPrevious').value = appConfig.initialMeter || 0;
+            }
+            
+            document.getElementById('inputDate').valueAsDate = new Date();
+
+            document.addEventListener('click', function(e) {
+                const input = document.getElementById('settingUrl');
+                const dropdown = document.getElementById('urlHistoryDropdown');
+                if (e.target !== input && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+
+            renderChart();
+            renderHistoryList();
+            calculate();
+            checkQueue();
+        });
+
+        function calculate() {
+            const current = parseFloat(document.getElementById('inputCurrent').value) || 0;
+            const previous = parseFloat(document.getElementById('inputPrevious').value) || 0;
+            const usage = Math.max(0, current - previous);
+            
+            let total = usage * appConfig.rate;
+            appConfig.addons.forEach(addon => { if (addon.active) total += addon.price; });
+
+            document.getElementById('displayTotal').innerText = formatRupiah(total);
+            document.getElementById('displayPemakaian').innerText = `${usage.toLocaleString('id-ID')} kWh`;
+            
+            if (current > 0 && current <= previous) {
+                document.getElementById('inputCurrent').classList.add('border-red-500', 'text-red-500');
+            } else {
+                document.getElementById('inputCurrent').classList.remove('border-red-500', 'text-red-500');
+            }
+        }
+
+        function renderAddonsUI() {
+            const container = document.getElementById('addonsContainer');
+            container.innerHTML = '';
+            let allActive = true;
+
+            appConfig.addons.forEach((addon, index) => {
+                if(!addon.active) allActive = false;
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5';
+                
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 w-full">
+                        <div class="relative flex items-center">
+                            <input type="checkbox" id="check_${addon.id}" ${addon.active ? 'checked' : ''} 
+                                class="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-gray-500 transition-all checked:border-neon checked:bg-neon"
+                                onchange="toggleAddon(${index}, this.checked)">
+                            <i class="bi bi-check text-white absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm opacity-0 peer-checked:opacity-100 pointer-events-none"></i>
+                        </div>
+                        <span class="text-sm text-gray-300 font-medium select-none cursor-pointer flex-1" onclick="document.getElementById('check_${addon.id}').click()">${addon.name}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-mono text-gray-400 select-none">${formatRupiah(addon.price)}</span>
+                            <button onclick="editAddonPrice(${index})" class="text-gray-500 hover:text-neon transition-colors p-1">
+                                <i class="bi bi-pencil-square text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            document.getElementById('toggleAllAddons').checked = allActive && appConfig.addons.length > 0;
+        }
+
+        function toggleAddon(index, isChecked) {
+            appConfig.addons[index].active = isChecked;
+            localStorage.setItem('st_config', JSON.stringify(appConfig));
+            renderAddonsUI();
+            calculate();
+        }
+
+        function toggleAllAddons(checkbox) {
+            appConfig.addons.forEach(addon => addon.active = checkbox.checked);
+            localStorage.setItem('st_config', JSON.stringify(appConfig));
+            renderAddonsUI();
+            calculate();
+        }
+
+        function editAddonPrice(index) {
+            const addon = appConfig.addons[index];
+            Swal.fire({
+                title: `Edit Harga ${addon.name}`,
+                input: 'number',
+                inputValue: addon.price,
+                inputAttributes: { step: 100, min: 0 },
+                showCancelButton: true,
+                confirmButtonText: 'Simpan',
+                cancelButtonText: 'Batal',
+                background: '#1e293b', color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    appConfig.addons[index].price = parseFloat(result.value) || 0;
+                    localStorage.setItem('st_config', JSON.stringify(appConfig));
+                    renderAddonsUI();
+                    calculate();
+                }
+            });
+        }
+
+        function saveRecord() {
+            const current = parseFloat(document.getElementById('inputCurrent').value);
+            const previous = parseFloat(document.getElementById('inputPrevious').value);
+            const date = document.getElementById('inputDate').value;
+            
+            if (!current || current <= previous) {
+                return Swal.fire({ icon: 'error', title: 'Data Tidak Valid', text: 'Meteran saat ini harus lebih besar.', background: '#1e293b', color: '#fff' });
+            }
+
+            const btnSave = document.getElementById('btnSave');
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<i class="bi bi-hourglass-split animate-spin"></i> Memproses...';
+
+            const usage = current - previous;
+            let cost = usage * appConfig.rate;
+            let activeAddons = [];
+            
+            appConfig.addons.forEach(addon => {
+                if (addon.active) { cost += addon.price; activeAddons.push(addon.name); }
+            });
+
+            const txId = new Date().getTime().toString();
+            const recordPayload = {
+                id: txId,
+                timestamp: new Date().toISOString(),
+                record: {
+                    date: date, meteranSekarang: current, meteranLalu: previous,
+                    pemakaian: usage, totalBiaya: cost, addons: activeAddons.join(", ")
+                }
+            };
+
+            // Simpan ke array
+            historyData.push({ id: txId, ...recordPayload.record });
+            if (historyData.length > 12) historyData.shift();
+            localStorage.setItem('st_history', JSON.stringify(historyData));
+            
+            // Set input meteran baru
+            document.getElementById('inputPrevious').value = current;
+            document.getElementById('inputCurrent').value = '';
+
+             // Masukkan antrean
+            syncQueue.push({ action: 'insert', data: recordPayload });
+            localStorage.setItem('st_queue', JSON.stringify(syncQueue));
+
+            Swal.fire({ icon: 'success', title: 'Tersimpan!', showConfirmButton: false, timer: 1500, background: '#1e293b', color: '#fff' });
+
+            renderChart();
+            renderHistoryList();
+            processQueue();
+
+            setTimeout(() => {
+                btnSave.disabled = false;
+                btnSave.innerHTML = '<i class="bi bi-save text-blue-400"></i><span class="text-sm font-semibold text-blue-100">Simpan Data</span>';
+            }, 1500);
+        }
+
+        // --- FUNGSI HAPUS (SMART DELETE) ---
+        function deleteRecord(id) {
+            Swal.fire({
+                title: 'Hapus Tagihan?',
+                text: "Data akan dihapus dan meteran lalu akan mundur.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#334155',
+                confirmButtonText: 'Ya, Hapus',
+                background: '#1e293b', color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    historyData = historyData.filter(item => item.id !== id);
+                    localStorage.setItem('st_history', JSON.stringify(historyData));
+
+                    // Memundurkan "Meteran Bulan Lalu"
+                    const lastRecord = historyData[historyData.length - 1];
+                    if (lastRecord) document.getElementById('inputPrevious').value = lastRecord.meteranSekarang;
+                    else document.getElementById('inputPrevious').value = appConfig.initialMeter || 0;
+
+                    syncQueue.push({ action: 'delete', id: id });
+                    localStorage.setItem('st_queue', JSON.stringify(syncQueue));
+
+                    renderChart();
+                    renderHistoryList();
+                    calculate();
+                    Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Terhapus!', showConfirmButton: false, timer: 1500, background: '#1e293b', color: '#fff' });
+                    
+                    processQueue();
+                }
+            });
+        }
+
+        // --- RENDER DETAIL RIWAYAT ---
+        function renderHistoryList() {
+            const container = document.getElementById('historyDetailsList');
+            container.innerHTML = '';
+            
+            if (historyData.length === 0) {
+                container.innerHTML = `<p class="text-center text-xs text-gray-500 py-4">Belum ada riwayat tagihan.</p>`;
+                return;
+            }
+
+            // Balik urutan dari terbaru ke terlama
+            const reversedData = [...historyData].reverse();
+
+            reversedData.forEach(tx => {
+                const tgl = new Date(tx.date).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
+                container.innerHTML += `
+                    <div class="flex items-center justify-between border-b border-white/5 pb-3 last:border-0 last:pb-0 pt-1">
+                        <div>
+                            <p class="text-sm text-gray-200 font-medium">${tgl}</p>
+                            <p class="text-[10px] text-gray-500 font-mono mt-1">${tx.meteranLalu} ➔ ${tx.meteranSekarang} <span class="text-neon ml-1">(${tx.pemakaian} kWh)</span></p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-mono text-gray-300">${formatRupiah(tx.totalBiaya)}</span>
+                            <button onclick="deleteRecord('${tx.id}')" class="text-gray-500 hover:text-red-400 transition-colors p-1" title="Hapus">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function setStatus(text, type) {
+            const el = document.getElementById('syncStatus');
+            el.innerHTML = text;
+            if(type === 'sync') el.className = 'text-[10px] font-mono px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 animate-pulse';
+            if(type === 'ok') el.className = 'text-[10px] font-mono px-2 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30';
+            if(type === 'err') el.className = 'text-[10px] font-mono px-2 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30';
+            if(type === 'wait') el.className = 'text-[10px] font-mono px-2 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700';
+        }
+
+        async function processQueue() {
+            if (syncQueue.length === 0) return;
+            if (!appConfig.webAppUrl) { setStatus('URL Belum Diset', 'err'); return; }
+            if (isSyncing) return;
+
+            isSyncing = true;
+            setStatus('☁️ Menyinkronkan...', 'sync');
+            const currentItem = syncQueue[0];
+            
+            let payloadToSend = {};
+            if (currentItem.action === 'delete') {
+                payloadToSend = { action: 'delete', id: currentItem.id };
+            } else {
+                payloadToSend = {
+                    action: 'insert', id: currentItem.data.id, timestamp: currentItem.data.timestamp,
+                    record: currentItem.data.record
+                };
+            }
+
+            try {
+                await fetch(appConfig.webAppUrl, {
+                    method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(payloadToSend)
+                });
+
+                syncQueue.shift();
+                localStorage.setItem('st_queue', JSON.stringify(syncQueue));
+                
+                if (syncQueue.length > 0) {
+                    isSyncing = false;
+                    processQueue();
+                } else {
+                    setStatus('✅ Tersimpan Cloud', 'ok');
+                    setTimeout(() => setStatus('Terkoneksi', 'wait'), 3000);
+                }
+            } catch (e) {
+                setStatus('❌ Menunggu Sinyal', 'err');
+            } finally {
+                isSyncing = false;
+            }
+        }
+
+        function checkQueue() {
+            if(syncQueue.length > 0) processQueue();
+            else if (appConfig.webAppUrl) setStatus('Terkoneksi', 'wait');
+            else setStatus('Belum Terkoneksi', 'err');
+        }
+
+        function showUrlHistory() {
+            const dropdown = document.getElementById('urlHistoryDropdown');
+            if(urlHistory.length > 0) { renderUrlHistory(); dropdown.classList.remove('hidden'); }
+        }
+
+        function renderUrlHistory() {
+            const dropdown = document.getElementById('urlHistoryDropdown');
+            dropdown.innerHTML = '';
+            urlHistory.forEach(url => {
+                dropdown.innerHTML += `
+                    <div class="flex items-center justify-between p-3 hover:bg-slate-700 cursor-pointer border-b border-slate-700 last:border-0 group">
+                        <div class="text-[11px] text-gray-300 truncate w-10/12 font-mono" onclick="selectUrl('${url}')">${url}</div>
+                        <button onclick="removeUrl(event, '${url}')" class="text-gray-500 hover:text-red-400 p-1 opacity-50 group-hover:opacity-100 transition-opacity"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                `;
+            });
+        }
+
+        function selectUrl(url) {
+            document.getElementById('settingUrl').value = url;
+            document.getElementById('urlHistoryDropdown').classList.add('hidden');
+        }
+
+        function removeUrl(event, urlToRemove) {
+            event.stopPropagation();
+            urlHistory = urlHistory.filter(url => url !== urlToRemove);
+            localStorage.setItem('st_url_history', JSON.stringify(urlHistory));
+            if(urlHistory.length === 0) document.getElementById('urlHistoryDropdown').classList.add('hidden');
+            else renderUrlHistory();
+        }
+
+        function openSettings() {
+            document.getElementById('settingUrl').value = appConfig.webAppUrl;
+            document.getElementById('settingRate').value = appConfig.rate;
+            
+            const initialContainer = document.getElementById('initialMeterContainer');
+            if (historyData.length === 0) {
+                initialContainer.classList.remove('hidden');
+                document.getElementById('settingInitialMeter').value = appConfig.initialMeter;
+            } else { initialContainer.classList.add('hidden'); }
+            
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.add('hidden');
+            document.getElementById('urlHistoryDropdown').classList.add('hidden');
+        }
+
+        function saveSettings() {
+            const urlInput = document.getElementById('settingUrl').value.trim();
+            appConfig.webAppUrl = urlInput;
+            appConfig.rate = parseFloat(document.getElementById('settingRate').value) || 2500;
+            
+            if (historyData.length === 0) {
+                appConfig.initialMeter = parseFloat(document.getElementById('settingInitialMeter').value) || 0;
+                document.getElementById('inputPrevious').value = appConfig.initialMeter;
+            }
+
+            localStorage.setItem('st_config', JSON.stringify(appConfig));
+
+            if (urlInput && urlInput.startsWith('http')) {
+                urlHistory = urlHistory.filter(url => url !== urlInput);
+                urlHistory.unshift(urlInput);
+                if(urlHistory.length > 3) urlHistory.pop();
+                localStorage.setItem('st_url_history', JSON.stringify(urlHistory));
+            }
+
+            closeSettings();
+            calculate();
+            checkQueue();
+            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Pengaturan Disimpan', showConfirmButton: false, timer: 1500, background: '#1e293b', color: '#fff' });
+        }
+
+        function shareBill() {
+            const total = document.getElementById('displayTotal').innerText;
+            const usage = document.getElementById('displayPemakaian').innerText;
+            const current = document.getElementById('inputCurrent').value;
+            const previous = document.getElementById('inputPrevious').value;
+            const dateStr = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'});
+            
+            let details = "";
+            appConfig.addons.forEach(addon => { if (addon.active) details += `✅ ${addon.name}: ${formatRupiah(addon.price)}\n`; });
+            const text = `⚡ *TAGIHAN LISTRIK BULANAN*\n📅 Per: ${dateStr}\n\n📊 *Detail Meteran:*\n• Akhir: ${current}\n• Awal: ${previous}\n• Pemakaian: ${usage}\n\n💰 *Rincian Biaya:*\n• Listrik: ${formatRupiah((current-previous)*appConfig.rate)}\n${details}----------------------------------\n💵 *TOTAL BAYAR: ${total}*\n----------------------------------\n_Dihitung via Ardita App_`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+        }
+
+        function formatRupiah(number) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number); }
+
+        function clearHistory() {
+            Swal.fire({ title: 'Hapus Riwayat?', text: "Data grafik akan dihapus permanen.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#334155', confirmButtonText: 'Ya, Hapus', background: '#1e293b', color: '#fff' }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.removeItem('st_history');
+                    historyData = [];
+                    document.getElementById('inputPrevious').value = appConfig.initialMeter || 0;
+                    renderChart();
+                    renderHistoryList();
+                    calculate();
+                    Swal.fire({ title: 'Terhapus!', icon: 'success', background: '#1e293b', color: '#fff', timer: 1000, showConfirmButton: false });
+                }
+            })
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            const labels = historyData.map(d => new Date(d.date).toLocaleDateString('id-ID', { month: 'short' }));
+            const costs = historyData.map(d => d.totalBiaya);
+            const usage = historyData.map(d => d.pemakaian);
+
+            if (chartInstance) chartInstance.destroy();
+            let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(56, 189, 248, 0.5)');
+            gradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Total (Rp)', data: costs, borderColor: '#38bdf8', backgroundColor: gradient, borderWidth: 2, pointBackgroundColor: '#fff', fill: true, tension: 0.4, yAxisID: 'y' },
+                        { label: 'Pemakaian (kWh)', data: usage, borderColor: '#818cf8', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, tension: 0.4, yAxisID: 'y1', fill: false }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false }, y1: { display: false } } }
+            });
+        }
+    </script>
+</body>
+</html>

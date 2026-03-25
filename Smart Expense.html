@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NgaturUang by Ardita</title>
+    
+    <!-- Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+                    colors: { 
+                        brand: { 50: '#eef2ff', 100: '#e0e7ff', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5' }
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+                        'float': '0 20px 40px -10px rgba(99,102,241,0.25)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #f8fafc; color: #334155; -webkit-tap-highlight-color: transparent; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        .clean-input { background: #f1f5f9; border: 2px solid transparent; transition: all 0.3s ease; }
+        .clean-input:focus { background: #ffffff; border-color: #c7d2fe; box-shadow: 0 0 0 4px #e0e7ff; outline: none; }
+        .category-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 2px solid transparent; }
+        .category-btn:active { transform: scale(0.95); }
+        
+        .gradient-card {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            background-size: 200% 200%;
+            animation: gradientMove 10s ease infinite;
+        }
+        @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        ::-webkit-scrollbar { width: 0px; }
+        @keyframes popIn { 0% { opacity: 0; transform: translateY(20px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        .animate-pop { animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    </style>
+</head>
+<body class="min-h-screen pb-10">
+
+    <!-- LAYAR KENALAN (ONBOARDING) -->
+    <div id="welcomeOverlay" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-5 transition-opacity duration-500 hidden">
+        <div class="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl text-center animate-pop border border-white">
+            <div class="w-20 h-20 bg-brand-100 text-brand-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-5 shadow-inner">👋</div>
+            <h2 class="text-2xl font-black text-slate-800 mb-2">Kenalan dulu yuk!</h2>
+            <p class="text-xs font-semibold text-slate-500 mb-6">Biar asisten pintar ini bisa ngasih saran keuangan yang lebih akrab sama kamu.</p>
+            
+            <input type="text" id="userNameInput" placeholder="Nama panggilan kamu..." 
+                class="clean-input w-full rounded-2xl px-5 py-4 text-center font-bold text-lg text-slate-800 placeholder-slate-300 mb-4"
+                onkeypress="if(event.key==='Enter') saveUser()">
+                
+            <button onclick="saveUser()" class="w-full py-4 bg-brand-500 hover:bg-brand-600 text-white font-black tracking-widest rounded-2xl shadow-[0_10px_20px_rgba(99,102,241,0.3)] transition-all active:scale-[0.98]">
+                MULAI NGATUR UANG ✨
+            </button>
+        </div>
+    </div>
+
+    <!-- Navbar Floating -->
+    <header class="fixed top-0 w-full z-40 bg-white/90 backdrop-blur-md border-b border-slate-100 hidden" id="mainHeader">
+        <div class="max-w-md mx-auto px-5 h-[72px] flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center text-xl shadow-lg shadow-brand-500/30">✨</div>
+                <div class="leading-tight">
+                    <h1 class="font-black text-xl tracking-tight text-slate-800">Ngatur<span class="text-brand-500">Uang</span></h1>
+                    <p id="headerGreeting" class="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider mt-0.5">Hai, Guest! 💸</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="syncStatus" class="text-[10px] font-bold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 transition-colors shadow-inner">Memuat...</span>
+                <button onclick="openSettings()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"><i class="bi bi-gear-fill"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto px-5 pt-[90px] space-y-6 hidden" id="mainContent">
+
+        <!-- Kartu Budget -->
+        <div class="gradient-card rounded-3xl p-6 text-white shadow-float relative overflow-hidden animate-pop">
+            <div class="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-white/20 blur-2xl"></div>
+            <div class="absolute -left-6 -bottom-6 w-24 h-24 rounded-full bg-black/10 blur-xl"></div>
+            
+            <div class="relative z-10">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <p class="text-white/80 text-[10px] font-extrabold uppercase tracking-widest mb-1">Pengeluaran Bulan Ini</p>
+                        <h2 id="displayTotal" class="text-4xl font-black tracking-tighter drop-shadow-md">Rp 0</h2>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur-sm rounded-xl p-2 px-3 text-right border border-white/20">
+                        <p class="text-white/80 text-[8px] uppercase font-black tracking-wider">Target Limit</p>
+                        <p id="displayBudget" class="text-xs font-bold drop-shadow-sm">Rp 0</p>
+                    </div>
+                </div>
+                
+                <div class="h-3.5 w-full bg-black/20 rounded-full p-0.5 backdrop-blur-sm shadow-inner">
+                    <div id="budgetProgress" class="h-full bg-white rounded-full transition-all duration-700 ease-out relative shadow-[0_0_10px_rgba(255,255,255,0.5)]" style="width: 0%">
+                        <div class="absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)]"></div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10 flex items-start gap-3">
+                    <div id="advisorIcon" class="text-2xl mt-0.5 animate-bounce">🥰</div>
+                    <div><p id="budgetWarning" class="text-xs font-bold text-white leading-snug">Sistem Sedang Menghitung... ✨</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Input Cepat -->
+        <div class="bg-white rounded-3xl p-6 shadow-soft animate-pop border border-slate-50" style="animation-delay: 0.1s; opacity: 0;">
+            <h3 class="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2">✍️ Hari ini uangnya lari ke mana?</h3>
+            
+            <div class="space-y-5">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><span class="text-2xl font-black text-slate-300">Rp</span></div>
+                    <input type="tel" id="inputAmount" placeholder="0" class="clean-input w-full rounded-2xl pl-14 pr-4 py-4 text-4xl font-black text-slate-800 placeholder-slate-200" oninput="formatInputRupiah(this)">
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-extrabold text-slate-400 mb-2.5 block ml-1 uppercase tracking-widest">Kategori Jajan</label>
+                    <div class="grid grid-cols-3 gap-3" id="categoryContainer"></div>
+                    <input type="hidden" id="selectedCategory" value="">
+                </div>
+
+                <div class="flex gap-3">
+                    <div class="relative flex-1">
+                        <i class="bi bi-pencil-fill absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
+                        <input type="text" id="inputNote" placeholder="Catatan (opsional)..." class="clean-input w-full rounded-2xl pl-10 pr-4 py-3.5 text-sm font-semibold text-slate-700">
+                    </div>
+                    <input type="date" id="inputDate" class="clean-input w-[135px] rounded-2xl px-3 py-3.5 text-sm font-bold text-slate-500 cursor-pointer uppercase">
+                </div>
+
+                <button id="btnSave" onclick="saveExpense()" class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-black tracking-widest rounded-2xl transition-all shadow-[0_10px_20px_rgba(0,0,0,0.2)] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                    <i class="bi bi-floppy-fill text-lg"></i><span>SIMPAN DATA</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Menu Rekap -->
+        <div class="bg-white rounded-3xl p-6 shadow-soft animate-pop border border-slate-50" style="animation-delay: 0.2s; opacity: 0;">
+            <div class="mb-4">
+                <h3 class="text-sm font-extrabold text-slate-800 flex items-center gap-2 mb-1">📊 Laporan & Evaluasi</h3>
+                <p class="text-[10px] text-slate-400 font-semibold">Buat rekap canggih untuk dikirim via WhatsApp.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="exportSummary('minggu')" class="py-3.5 bg-indigo-50 text-indigo-600 rounded-2xl font-bold text-xs hover:bg-indigo-100 transition-colors flex flex-col items-center justify-center gap-1 border border-indigo-100 shadow-sm active:scale-95">
+                    <i class="bi bi-calendar-week text-xl mb-1"></i> Rekap Mingguan
+                </button>
+                <button onclick="exportSummary('bulan')" class="py-3.5 bg-pink-50 text-pink-600 rounded-2xl font-bold text-xs hover:bg-pink-100 transition-colors flex flex-col items-center justify-center gap-1 border border-pink-100 shadow-sm active:scale-95">
+                    <i class="bi bi-calendar-month text-xl mb-1"></i> Rekap Bulanan
+                </button>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div class="bg-white rounded-3xl p-6 shadow-soft animate-pop border border-slate-50" style="animation-delay: 0.3s; opacity: 0;">
+            <h3 class="text-sm font-extrabold text-slate-800 flex items-center gap-2 mb-5">🕒 Riwayat Terakhir</h3>
+            <div id="historyList" class="space-y-4"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center pb-8 animate-pop" style="animation-delay: 0.4s; opacity: 0;">
+            <p class="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">NgaturUang by Ardita Rizki Fauzi</p>
+        </div>
+
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeSettings()"></div>
+        <div class="absolute bottom-0 w-full bg-white p-7 rounded-t-[2rem] shadow-2xl transition-transform transform translate-y-0">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-black text-slate-800">Pengaturan ⚙️</h3>
+                <button onclick="closeSettings()" class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"><i class="bi bi-x-lg"></i></button>
+            </div>
+
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-[10px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Profil Pengguna</label>
+                    <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-inner">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-black">👤</div>
+                            <span id="settingUserName" class="font-bold text-slate-700 capitalize">Guest</span>
+                        </div>
+                        <button onclick="logoutUser()" class="text-[10px] font-extrabold text-rose-500 hover:text-rose-600 uppercase tracking-wider bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-100 transition-colors active:scale-95">Ganti Nama</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">Target Budget Bulanan</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black">Rp</span>
+                        <input type="tel" id="settingBudget" class="clean-input w-full rounded-xl pl-12 pr-4 py-3.5 font-bold text-slate-800" oninput="formatInputRupiah(this)">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">URL Google Sheets (Cloud)</label>
+                        <button onclick="document.getElementById('tutorialCloud').classList.toggle('hidden')" class="text-[10px] text-brand-500 font-extrabold bg-brand-50 px-2.5 py-1 rounded-lg hover:bg-brand-100 transition-colors flex items-center gap-1 active:scale-95">
+                            <i class="bi bi-question-circle-fill"></i> Cara Pakenya?
+                        </button>
+                    </div>
+                    <input type="url" id="settingUrl" placeholder="https://script.google.com/..." class="clean-input w-full rounded-xl px-4 py-3.5 text-sm text-slate-600 font-mono">
+                    
+                    <!-- Tutorial Box Simple -->
+                    <div id="tutorialCloud" class="hidden mt-3 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                        <h4 class="text-xs font-black text-brand-600 mb-2">Setup Cloud Simpel ☁️</h4>
+                        <ol class="text-[10px] text-slate-600 space-y-2 font-medium list-decimal list-inside ml-1">
+                            <li>Buka <a href="https://sheets.google.com" target="_blank" class="text-brand-500 underline font-bold">Google Sheets</a>, buat file baru.</li>
+                            <li>Tulis ini di baris paling atas (Header):<br>
+                                <span class="text-brand-600 font-mono text-[9px] bg-brand-50 px-1.5 py-0.5 rounded border border-brand-100 inline-block mt-1 font-bold">Tanggal | Nama | Kategori | Nominal | Catatan | ID | Waktu Input</span>
+                            </li>
+                            <li>Klik menu <b>Extensions</b> > <b>Apps Script</b>.</li>
+                            <li>Hapus semua isinya, lalu klik <button onclick="copyScriptCode()" class="text-brand-500 bg-white border border-brand-200 px-1.5 py-0.5 rounded shadow-sm font-bold cursor-pointer hover:bg-brand-50 active:scale-95 transition-all">Copy Kode Ini 📋</button> dan Paste.</li>
+                            <li>Klik <b>Deploy</b> > <b>New Deployment</b> > tipe <b>Web App</b>.</li>
+                            <li>Akses pilih <b>Anyone</b>, klik Deploy, copy URL-nya ke kotak di atas! ✨</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <button onclick="saveSettings()" class="w-full py-4 bg-brand-500 hover:bg-brand-600 text-white font-black tracking-widest rounded-xl shadow-[0_10px_20px_rgba(99,102,241,0.3)] transition-all active:scale-[0.98] mt-2">
+                    SIMPAN PERUBAHAN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CATEGORIES = [
+            { id: 'makan', name: 'Makan', icon: '🍟', bg: 'bg-orange-100', text: 'text-orange-600', border: 'border-orange-200' },
+            { id: 'belanja', name: 'Belanja', icon: '🛍️', bg: 'bg-pink-100', text: 'text-pink-600', border: 'border-pink-200' },
+            { id: 'transport', name: 'Jalan', icon: '🛵', bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200' },
+            { id: 'tagihan', name: 'Tagihan', icon: '🧾', bg: 'bg-purple-100', text: 'text-purple-600', border: 'border-purple-200' },
+            { id: 'hiburan', name: 'Main', icon: '🎮', bg: 'bg-teal-100', text: 'text-teal-600', border: 'border-teal-200' },
+            { id: 'lainnya', name: 'Lainnya', icon: '📦', bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' }
+        ];
+
+        let appConfig = JSON.parse(localStorage.getItem('ngatur_config')) || { webAppUrl: '', budget: 5000000 };
+        let transactions = JSON.parse(localStorage.getItem('ngatur_tx')) || [];
+        let syncQueue = JSON.parse(localStorage.getItem('ngatur_queue')) || [];
+        let activeUser = localStorage.getItem('ngatur_user') || '';
+        let isSyncing = false; 
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!activeUser) document.getElementById('welcomeOverlay').classList.remove('hidden');
+            else initApp();
+        });
+
+        function saveUser() {
+            const name = document.getElementById('userNameInput').value.trim();
+            if (!name) return alertErr('Isi nama panggilan dulu dong biar akrab! 🥺');
+            activeUser = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+            localStorage.setItem('ngatur_user', activeUser);
+            
+            document.getElementById('welcomeOverlay').style.opacity = '0';
+            setTimeout(() => { document.getElementById('welcomeOverlay').classList.add('hidden'); initApp(); }, 500);
+        }
+
+        function logoutUser() {
+            closeSettings();
+            Swal.fire({
+                title: 'Ganti nama profil?', text: "Kamu bakal balik ke halaman awal ya.", icon: 'question',
+                showCancelButton: true, confirmButtonColor: '#6366f1', cancelButtonColor: '#f1f5f9',
+                confirmButtonText: 'Ya, ganti!', cancelButtonText: '<span class="text-slate-600 font-bold">Batal</span>',
+                customClass: { popup: 'rounded-3xl shadow-soft font-sans' }
+            }).then((result) => {
+                if (result.isConfirmed) { localStorage.removeItem('ngatur_user'); location.reload(); }
+            });
+        }
+
+        function initApp() {
+            document.getElementById('mainHeader').classList.remove('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            document.getElementById('headerGreeting').innerText = `Hai, ${activeUser}! 💸`;
+            document.getElementById('settingUserName').innerText = activeUser;
+            document.getElementById('inputDate').valueAsDate = new Date();
+            renderCategories(); updateDashboard(); renderHistory(); checkQueue();
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('categoryContainer');
+            container.innerHTML = '';
+            CATEGORIES.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `category-btn flex flex-col items-center justify-center gap-2 p-3 rounded-2xl bg-white border-2 border-slate-100 hover:border-slate-200 shadow-sm`;
+                btn.id = `cat_${cat.id}`;
+                btn.onclick = () => selectCategory(cat.id);
+                btn.innerHTML = `<div class="w-12 h-12 rounded-full ${cat.bg} ${cat.text} flex items-center justify-center text-2xl shadow-sm">${cat.icon}</div><span class="text-[11px] font-extrabold text-slate-500">${cat.name}</span>`;
+                container.appendChild(btn);
+            });
+        }
+
+        function selectCategory(id) {
+            document.querySelectorAll('.category-btn').forEach(btn => btn.className = `category-btn flex flex-col items-center justify-center gap-2 p-3 rounded-2xl bg-white border-2 border-slate-100 hover:border-slate-200 shadow-sm`);
+            const selectedCat = CATEGORIES.find(c => c.id === id);
+            document.getElementById(`cat_${id}`).className = `category-btn flex flex-col items-center justify-center gap-2 p-3 rounded-2xl ${selectedCat.bg} border-2 ${selectedCat.border} shadow-md transform scale-[0.95]`;
+            document.getElementById('selectedCategory').value = id;
+        }
+
+        function saveExpense() {
+            const rawAmount = document.getElementById('inputAmount').value.replace(/\./g, '');
+            const amount = parseInt(rawAmount);
+            const date = document.getElementById('inputDate').value;
+            const note = document.getElementById('inputNote').value.trim();
+            const categoryId = document.getElementById('selectedCategory').value;
+
+            if (!amount || amount <= 0) return alertErr(`Isi nominalnya dulu dong, ${activeUser}! 💸`);
+            if (!categoryId) return alertErr(`Pilih kategorinya biar gampang direkap, ${activeUser}! 🎯`);
+
+            const btnSave = document.getElementById('btnSave');
+            btnSave.disabled = true; btnSave.innerHTML = '<i class="bi bi-hourglass-split animate-spin"></i> MEMPROSES...';
+
+            const catObj = CATEGORIES.find(c => c.id === categoryId);
+            const txId = new Date().getTime().toString(); 
+
+            const newTx = { id: txId, date: date, amount: amount, category: catObj.name, note: note, timestamp: new Date().toISOString() };
+            transactions.push(newTx);
+            localStorage.setItem('ngatur_tx', JSON.stringify(transactions));
+            
+            syncQueue.push({ action: 'insert', userName: activeUser, data: newTx });
+            localStorage.setItem('ngatur_queue', JSON.stringify(syncQueue));
+
+            document.getElementById('inputAmount').value = ''; document.getElementById('inputNote').value = '';
+            document.getElementById('selectedCategory').value = ''; renderCategories();
+
+            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Data aman bestie! 👍', showConfirmButton: false, timer: 2000, customClass: { popup: 'rounded-2xl shadow-soft font-sans' }});
+            updateDashboard(); renderHistory(); processQueue(); 
+
+            setTimeout(() => { btnSave.disabled = false; btnSave.innerHTML = '<i class="bi bi-floppy-fill text-lg"></i><span>SIMPAN DATA</span>'; }, 1000);
+        }
+
+        function updateDashboard() {
+            const currentMonth = new Date().toISOString().substring(0, 7); 
+            const total = transactions.filter(t => t.date.substring(0, 7) === currentMonth).reduce((sum, t) => sum + t.amount, 0);
+
+            document.getElementById('displayTotal').innerText = formatRupiah(total);
+            document.getElementById('displayBudget').innerText = formatRupiah(appConfig.budget);
+
+            let percentage = appConfig.budget > 0 ? Math.min((total / appConfig.budget) * 100, 100) : 0;
+            const progressBar = document.getElementById('budgetProgress'), warningText = document.getElementById('budgetWarning'), advisorIcon = document.getElementById('advisorIcon');
+            progressBar.style.width = `${percentage}%`;
+
+            if (percentage >= 100) {
+                progressBar.className = 'h-full bg-red-400 rounded-full transition-all duration-700 ease-out relative shadow-[0_0_10px_rgba(248,113,113,0.8)]';
+                advisorIcon.innerText = '😭'; warningText.innerHTML = `<b>Ya ampun ${activeUser}, boncos!</b> Bulan ini limitnya udah habis. Puasa jajan boba dulu ya, semangat! 💪`;
+            } else if (percentage >= 80) {
+                progressBar.className = 'h-full bg-yellow-300 rounded-full transition-all duration-700 ease-out relative shadow-[0_0_10px_rgba(253,224,71,0.8)]';
+                advisorIcon.innerText = '🥺'; warningText.innerHTML = `<b>Waduh ${activeUser}, dompet mulai teriak!</b> Udah mau limit nih bestie. Kurang-kurangin buka aplikasi belanja ya! 🛍️❌`;
+            } else if (percentage >= 50) {
+                progressBar.className = 'h-full bg-white/90 rounded-full transition-all duration-700 ease-out relative shadow-[0_0_10px_rgba(255,255,255,0.6)]';
+                advisorIcon.innerText = '🤔'; warningText.innerHTML = `<b>Udah setengah jalan nih ${activeUser}.</b> Mulai ngerem dikit ya pengeluarannya biar aman sampai akhir bulan! 🍜`;
+            } else {
+                progressBar.className = 'h-full bg-white rounded-full transition-all duration-700 ease-out relative shadow-[0_0_10px_rgba(255,255,255,0.9)]';
+                advisorIcon.innerText = '🥰'; warningText.innerHTML = `<b>Hai ${activeUser}!</b> Budget kamu masih aman banget nih. Lanjutin ya pinternya ngatur uang! ✨`;
+            }
+        }
+        // --- FORMAT WA DIPERBAIKI (RAPI & ESTETIK) ---
+        function exportSummary(type) {
+            if(transactions.length === 0) return alertErr(`Belum ada data yang bisa direkap nih, ${activeUser}! 🥺`);
+            const now = new Date(); let filteredTx = []; let periodText = "";
+
+            if (type === 'minggu') {
+                const currentDay = now.getDay(), distance = currentDay === 0 ? 6 : currentDay - 1; 
+                const monday = new Date(now); monday.setDate(now.getDate() - distance); monday.setHours(0,0,0,0);
+                filteredTx = transactions.filter(t => new Date(t.date) >= monday); periodText = "Minggu Ini";
+            } else if (type === 'bulan') {
+                const currentMonthStr = now.toISOString().substring(0, 7);
+                filteredTx = transactions.filter(t => t.date.substring(0, 7) === currentMonthStr);
+                const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                periodText = `Bulan ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+            }
+
+            if(filteredTx.length === 0) return alertErr(`Kamu belum ada pengeluaran untuk ${periodText}, ${activeUser}. Keren! 🤩`);
+
+            let totalSpent = 0; let categoryTotals = {}; CATEGORIES.forEach(c => categoryTotals[c.name] = 0);
+            filteredTx.forEach(tx => { totalSpent += tx.amount; categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + tx.amount; });
+
+            let sortedCats = Object.keys(categoryTotals).filter(cat => categoryTotals[cat] > 0).sort((a, b) => categoryTotals[b] - categoryTotals[a]);
+            const topCatName = sortedCats[0], topCatVal = categoryTotals[topCatName];
+
+            let saran = "", remaining = appConfig.budget - totalSpent;
+            if (type === 'bulan') {
+                if (remaining < 0) saran = `Saran:\nYa ampun ${activeUser} over budget! 😭 Tolong bulan depan dicatet lebih disiplin ya sayang.`;
+                else if (remaining < (appConfig.budget * 0.2)) saran = `Saran:\nWah mepet banget limitnya! 🥺 Yuk bisa yuk ${activeUser} lebih hemat lagi.`;
+                else saran = `Saran:\nGood job bestie! 🎉 Kamu berhasil ngatur uang dengan baik bulan ini.`;
+            } else { saran = `Saran:\nTetap bijak milih prioritas jajan ya ${activeUser}! ✨`; }
+            // BUILD WHATSAPP MESSAGE USING MULTI-LINE TEMPLATE STRING
+            let waText = 
+`📊 *REKAP KEUANGAN ${activeUser.toUpperCase()}* 📊
+🗓️ *Periode:* ${periodText}
+--------------------------------
+
+💸 *Total Pengeluaran:*
+*${formatRupiah(totalSpent)}*
+`;
+            if(type === 'bulan') { 
+                waText += `
+🎯 *Target Limit:* ${formatRupiah(appConfig.budget)}
+ sisa: ${remaining >= 0 ? formatRupiah(remaining) : 'Over Budget ' + formatRupiah(Math.abs(remaining))}
+`; 
+            }
+
+            waText += `
+📑 *Rincian Jajan:*
+`; 
+            sortedCats.forEach(cat => { 
+                waText += `▫️ ${cat}: ${formatRupiah(categoryTotals[cat])}\n`; 
+            });
+
+            waText += `
+🚨 *Paling Boros di:*
+${topCatName} (${formatRupiah(topCatVal)})
+--------------------------------
+💡 *${saran}*
+
+📱 _NgaturUang by Ardita Rizki Fauzi_`;
+
+            // BUKA WHATSAPP
+            window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank');
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyList'); container.innerHTML = '';
+            
+            if(transactions.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200"><div class="text-4xl mb-2">💸</div><p class="text-xs font-extrabold text-slate-400">Belum ada pengeluaran.<br>Nabung terooos!</p></div>`;
+                return;
+            }
+
+            const sorted = [...transactions].sort((a, b) => {
+                if (a.date !== b.date) { return a.date > b.date ? -1 : 1; }
+                return b.id > a.id ? -1 : 1; 
+            }).slice(0, 15);
+
+            sorted.forEach(tx => { 
+                const catObj = CATEGORIES.find(c => c.name === tx.category) || CATEGORIES[5];
+                const tglObj = new Date(tx.date);
+                const dayName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][tglObj.getDay()];
+                const tglStr = `${tglObj.getDate()} ${tglObj.toLocaleString('id-ID', { month: 'short' })}`;
+
+                container.innerHTML += `
+                    <div class="flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-white hover:bg-slate-50 transition-all shadow-sm group">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-full ${catObj.bg} ${catObj.text} flex items-center justify-center text-2xl shadow-sm">${catObj.icon}</div>
+                            <div>
+                                <p class="text-sm font-extrabold text-slate-800 leading-tight">${tx.category}</p>
+                                <p class="text-[10px] font-bold text-slate-400 mt-0.5">${dayName}, ${tglStr} ${tx.note ? `<span class="text-slate-300 mx-1">•</span> <span class="text-slate-500 truncate max-w-[100px] inline-block align-bottom italic">${tx.note}</span>` : ''}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-extrabold text-slate-800">${formatRupiah(tx.amount)}</span>
+                            <button onclick="deleteTransaction('${tx.id}')" class="w-8 h-8 rounded-full bg-slate-100 border border-transparent text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 active:scale-95" title="Hapus"><i class="bi bi-trash3-fill text-xs"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function deleteTransaction(id) {
+            Swal.fire({
+                title: 'Hapus catatan?', text: "Yakin nih mau dihapus sayang?", icon: 'warning',
+                showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#f1f5f9',
+                confirmButtonText: 'Ya, hapus!', cancelButtonText: '<span class="text-slate-600 font-bold">Batal</span>', customClass: { popup: 'rounded-3xl shadow-soft font-sans' }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    transactions = transactions.filter(t => t.id !== id);
+                    localStorage.setItem('ngatur_tx', JSON.stringify(transactions));
+                    syncQueue.push({ action: 'delete', id: id });
+                    localStorage.setItem('ngatur_queue', JSON.stringify(syncQueue));
+                    updateDashboard(); renderHistory(); processQueue();
+                    Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Terhapus! 🗑️', showConfirmButton: false, timer: 1500, customClass: { popup: 'rounded-2xl font-sans font-bold' }});
+                }
+            });
+        }
+// --- SISTEM CLOUD SYNC ---
+        function setStatus(text, type) {
+            const el = document.getElementById('syncStatus');
+            el.innerHTML = text;
+            if(type === 'sync') el.className = 'text-[10px] font-bold px-3 py-1.5 rounded-full bg-yellow-100 text-yellow-600 border border-yellow-200 animate-pulse shadow-sm';
+            if(type === 'ok') el.className = 'text-[10px] font-bold px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-200 shadow-sm';
+            if(type === 'err') el.className = 'text-[10px] font-bold px-3 py-1.5 rounded-full bg-rose-100 text-rose-600 border border-rose-200 shadow-sm';
+            if(type === 'wait') el.className = 'text-[10px] font-bold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shadow-inner';
+        }
+
+        async function processQueue() {
+            if (syncQueue.length === 0) return;
+            if (!appConfig.webAppUrl) { setStatus('Cloud Offline', 'err'); return; }
+            if (isSyncing) return; 
+
+            isSyncing = true; setStatus('Menyimpan... ☁️', 'sync');
+            const currentItem = syncQueue[0];
+            let payloadToSend = currentItem.action === 'delete' ? { action: 'delete', id: currentItem.id } : { 
+                action: 'insert', id: currentItem.data.id, timestamp: currentItem.data.timestamp, userName: currentItem.userName || activeUser,
+                transaction: { date: currentItem.data.date, category: currentItem.data.category, amount: currentItem.data.amount, note: currentItem.data.note }
+            };
+
+            try {
+                await fetch(appConfig.webAppUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payloadToSend) });
+                syncQueue.shift(); localStorage.setItem('ngatur_queue', JSON.stringify(syncQueue));
+                if (syncQueue.length > 0) { isSyncing = false; processQueue(); } 
+                else { setStatus('Tersimpan! ✅', 'ok'); setTimeout(() => setStatus('Cloud Aktif', 'wait'), 3000); }
+            } catch (e) { setStatus('Gagal Sync ❌', 'err'); } finally { isSyncing = false; }
+        }
+
+        function checkQueue() { syncQueue.length > 0 ? processQueue() : (appConfig.webAppUrl ? setStatus('Cloud Aktif', 'wait') : setStatus('Lokal Saja', 'wait')); }
+        function openSettings() { document.getElementById('settingUrl').value = appConfig.webAppUrl || ''; document.getElementById('settingBudget').value = formatRupiahReal(appConfig.budget); document.getElementById('settingsModal').classList.remove('hidden'); }
+        function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); }
+        function saveSettings() {
+            const rawBudget = document.getElementById('settingBudget').value.replace(/\./g, '');
+            appConfig.budget = parseInt(rawBudget) || 5000000;
+            appConfig.webAppUrl = document.getElementById('settingUrl').value.trim();
+            localStorage.setItem('ngatur_config', JSON.stringify(appConfig));
+            closeSettings(); updateDashboard(); checkQueue(); 
+            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Sip, disimpan! 👌', showConfirmButton: false, timer: 1500, customClass: { popup: 'rounded-2xl font-sans' }});
+        }
+        function formatInputRupiah(input) { let val = input.value.replace(/[^0-9]/g, ''); if(val === '') { input.value = ''; return; } input.value = new Intl.NumberFormat('id-ID').format(val); }
+        function formatRupiahReal(angka) { return new Intl.NumberFormat('id-ID').format(angka); }
+        function formatRupiah(number) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number); }
+        function alertErr(msg) { Swal.fire({ icon: 'warning', title: 'Tunggu dulu!', text: msg, confirmButtonColor: '#6366f1', customClass: { popup: 'rounded-3xl font-sans' } }); }
+
+        // --- SCRIPT COPY HELPER (BUAT TUTORIAL SIMPEL) ---
+        function copyScriptCode() {
+            const code = `function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  try {
+    var payload = JSON.parse(e.postData.contents);
+    var action = payload.action || 'insert';
+    var txId = payload.id;
+    
+    if (action === 'delete') {
+      var lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        var ids = sheet.getRange(2, 6, lastRow - 1, 1).getValues();
+        for (var i = 0; i < ids.length; i++) {
+          if (ids[i][0] == txId) {
+            sheet.deleteRow(i + 2);
+            return ContentService.createTextOutput(JSON.stringify({"status": "deleted"})).setMimeType(ContentService.MimeType.JSON);
+          }
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({"status": "not_found"})).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var tx = payload.transaction;
+    var userName = payload.userName || 'Guest';
+    var lastRowCheck = sheet.getLastRow();
+    
+    if (lastRowCheck > 1) {
+      var existingIds = sheet.getRange(2, 6, lastRowCheck - 1, 1).getValues();
+      for (var j = 0; j < existingIds.length; j++) {
+        if (existingIds[j][0] == txId) {
+          return ContentService.createTextOutput(JSON.stringify({"status": "duplicate_ignored"})).setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+    }
+    
+    // SIMPEL: Selalu tambahkan di baris paling bawah
+    sheet.appendRow([tx.date, userName, tx.category, tx.amount, tx.note || "-", txId, payload.timestamp]);
+    
+    // SORTING AMAN: Urutkan Tanggal (Terbaru di atas)
+    var newLastRow = sheet.getLastRow();
+    if (newLastRow > 2) { 
+      sheet.getRange(2, 1, newLastRow - 1, sheet.getLastColumn()).sort([
+        {column: 1, ascending: false}, // Sort Tanggal Descending
+        {column: 7, ascending: false}  // Sort Waktu Input Descending
+      ]); 
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({"status": "success"})).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) { return ContentService.createTextOutput(JSON.stringify({"status": "error", "message": error.message})); }
+}`;
+            const el = document.createElement('textarea');
+            el.value = code;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            
+            Swal.fire({
+                toast: true, position: 'top', icon: 'success', 
+                title: 'Kode Apps Script dicopy! 📋', 
+                showConfirmButton: false, timer: 2000,
+                customClass: { popup: 'rounded-2xl shadow-soft font-sans font-bold' }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ant Motor Garage - Pro System</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { 
+                        carbon: '#09090b', surface: '#171717', surfaceLight: '#262626',
+                        antOrange: '#ea580c', antRed: '#dc2626', silver: '#9ca3af', success: '#10b981', warning: '#f59e0b'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #09090b; color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
+        .pro-card { background: #171717; border: 1px solid #262626; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .pro-input { background: #09090b; border: 1px solid #333; color: #fff; border-radius: 6px; transition: all 0.2s; }
+        .pro-input:focus { border-color: #ea580c; outline: none; box-shadow: 0 0 0 1px #ea580c; }
+        .bar-transition { transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        ::-webkit-scrollbar { width: 0px; }
+        input[type="checkbox"]:checked + div { background-color: #ea580c; border-color: #ea580c; }
+        input[type="checkbox"]:checked + div > i { opacity: 1; }
+        #loginOverlay { backdrop-filter: blur(10px); }
+        /* Styling Datalist agar lebih bersih */
+        datalist { background-color: #171717; color: white; }
+    </style>
+</head>
+<body class="min-h-screen pb-24 font-sans selection:bg-antOrange selection:text-white">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginOverlay" class="fixed inset-0 z-50 bg-carbon/95 flex flex-col items-center justify-center px-4 transition-opacity duration-500">
+        <div class="text-center mb-8">
+            <div class="w-24 h-24 mx-auto bg-gradient-to-tr from-antRed to-antOrange rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(234,88,12,0.4)]">
+                <span class="text-5xl animate-pulse">🐜</span>
+            </div>
+            <h1 class="text-3xl font-black text-white mt-4 tracking-tighter uppercase italic">Ant Motor <span class="text-antOrange">Garage</span></h1>
+            <p class="text-silver text-xs font-mono tracking-widest mt-1">PROFESSIONAL WORKSHOP SYSTEM</p>
+        </div>
+        <div class="w-full max-w-sm pro-card p-6">
+            <label class="text-[10px] text-gray-500 font-bold uppercase block mb-2 text-center">AUTHORIZED LOGIN</label>
+            <input type="text" id="mechanicNameInput" placeholder="NAMA MEKANIK..." class="pro-input w-full px-4 py-4 text-center font-bold text-lg mb-4 uppercase text-antOrange placeholder:text-gray-800" onkeypress="if(event.key==='Enter') loginMechanic()">
+            <button onclick="loginMechanic()" class="w-full py-4 bg-gradient-to-r from-antOrange to-antRed hover:from-antRed hover:to-antOrange text-white font-black uppercase tracking-widest rounded-lg transition-all shadow-lg active:scale-95">
+                AKSES SISTEM
+            </button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-40 bg-carbon/90 backdrop-blur-md border-b border-surfaceLight shadow-md hidden" id="mainHeader">
+        <div class="max-w-xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl drop-shadow-[0_0_10px_rgba(234,88,12,0.8)]">🐜</span>
+                <div class="leading-none">
+                    <h1 class="font-black text-lg tracking-tight uppercase text-white italic">Ant Motor</h1>
+                    <p class="text-[9px] text-antOrange font-mono tracking-widest">GARAGE SYSTEM</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="syncStatus" class="text-[10px] font-mono px-2 py-1 rounded bg-surface border border-gray-700 text-gray-400">OFFLINE</span>
+                <button onclick="openSettings()" class="text-gray-400 hover:text-white transition-colors bg-surfaceLight p-1.5 rounded"><i class="bi bi-sliders text-lg"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-xl mx-auto px-4 pt-24 space-y-6 hidden" id="mainContent">
+
+        <!-- Data Kendaraan Pelanggan -->
+        <div class="pro-card p-5 border-t-4 border-t-antOrange shadow-[0_0_20px_rgba(234,88,12,0.1)]">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center"><i class="bi bi-person-vcard text-antOrange mr-2"></i> Data Pelanggan</h3>
+                <span class="text-[9px] text-gray-500 font-mono uppercase">Excel Autocomplete Mode</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-1">Plat Nomor / Nopol</label>
+                    <input list="plateOptions" type="text" id="inputPlate" placeholder="N 1234 ABC" class="pro-input w-full px-3 py-3 text-sm font-mono uppercase font-bold text-white" oninput="refreshVehicleData()" autocomplete="off">
+                    <datalist id="plateOptions"></datalist>
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-1">Nama Pemilik</label>
+                    <input list="customerOptions" type="text" id="inputCustomer" placeholder="Nama Pelanggan" class="pro-input w-full px-3 py-3 text-sm capitalize font-bold" autocomplete="off">
+                    <datalist id="customerOptions"></datalist>
+                </div>
+            </div>
+        </div>
+
+        <!-- Odometer & Diagnostics -->
+        <div class="pro-card p-5 relative overflow-hidden">
+            <div class="absolute right-0 top-0 opacity-5 pointer-events-none"><i class="bi bi-speedometer text-[150px]"></i></div>
+            
+            <label class="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">Odometer Kendaraan (KM)</label>
+            <div class="relative">
+                <input type="number" id="kmNow" placeholder="00000" class="w-full bg-carbon border-2 border-surfaceLight rounded-lg text-4xl font-mono font-black text-white px-4 py-4 focus:border-antOrange outline-none transition-colors" oninput="runDiagnostics()">
+                <div class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 font-black text-xl">KM</div>
+            </div>
+
+            <div class="mt-6 pt-5 border-t border-surfaceLight">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xs text-silver font-bold uppercase tracking-widest flex items-center gap-2">
+                        <i class="bi bi-cpu text-antOrange"></i> Diagnostik Mesin 
+                        <span id="diagnosticTarget" class="text-[9px] bg-carbon px-2 py-0.5 rounded text-antOrange border border-antOrange/30 hidden"></span>
+                    </h3>
+                </div>
+                <div id="diagnosticContainer" class="space-y-4">
+                    <p class="text-xs text-gray-500 font-mono text-center py-4 border border-dashed border-gray-700 rounded bg-carbon/50 uppercase italic">Scan plat & km untuk riwayat part</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Record Service -->
+        <div class="pro-card p-5">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center"><i class="bi bi-tools text-antOrange mr-2"></i> Tindakan Servis</h3>
+            
+            <div class="mb-4">
+                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-2">Pilih Pekerjaan / Part</label>
+                <div class="grid grid-cols-2 gap-2" id="partsChecklist"></div>
+                
+                <label class="relative flex items-center p-3 mt-2 rounded-lg border border-surfaceLight bg-surface hover:border-gray-500 cursor-pointer transition-colors group">
+                    <input type="checkbox" id="checkOther" value="Lainnya" class="hidden peer" onchange="toggleCustomPart(this)">
+                    <div class="w-4 h-4 rounded border border-gray-500 mr-3 flex items-center justify-center transition-colors">
+                        <i class="bi bi-check text-white text-xs opacity-0 transition-opacity"></i>
+                    </div>
+                    <span class="text-xs text-gray-300 font-medium select-none">Lainnya (Pekerjaan Kustom)</span>
+                </label>
+                <input type="text" id="inputCustomPart" placeholder="Contoh: Turun Mesin, Ganti Ban..." class="pro-input w-full px-3 py-2 text-xs mt-2 hidden">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-1">Tanggal</label>
+                    <input type="date" id="inputDate" class="pro-input w-full px-3 py-3 text-sm">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-1">Biaya Total (Rp)</label>
+                    <input type="tel" id="inputCost" placeholder="0" class="pro-input w-full px-3 py-3 text-sm font-mono text-antOrange font-bold" oninput="formatInputRupiah(this)">
+                </div>
+            </div>
+
+            <div class="mb-5">
+                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Catatan Mekanik</label>
+                <input type="text" id="inputNote" placeholder="Keterangan tambahan bengkel..." class="pro-input w-full px-3 py-3 text-sm">
+            </div>
+
+            <button id="btnSave" onclick="saveRecord()" class="w-full py-4 bg-antOrange hover:bg-antRed text-white font-black uppercase tracking-widest rounded-lg transition-colors active:scale-95 disabled:opacity-50 flex justify-center items-center gap-2 shadow-[0_0_15px_rgba(234,88,12,0.4)]">
+                <i class="bi bi-floppy-fill"></i> SIMPAN INVOICE
+            </button>
+        </div>
+
+        <!-- History -->
+        <div class="pro-card p-5">
+            <div class="flex justify-between items-center mb-4 border-b border-surfaceLight pb-2">
+                <div class="flex flex-col">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="bi bi-receipt text-gray-400"></i> 
+                        <span id="historyTitle">LOG RIWAYAT BENGKEL</span>
+                    </h3>
+                    <p id="historySubtitle" class="text-[9px] text-gray-500 font-mono">Menampilkan aktivitas bengkel terbaru</p>
+                </div>
+                <button onclick="shareWhatsApp()" class="text-[10px] bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded font-bold flex items-center gap-1 shadow-lg">
+                    <i class="bi bi-whatsapp"></i> STRUK WA
+                </button>
+            </div>
+            
+            <div id="historyList" class="space-y-4"></div>
+        </div>
+
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeSettings()"></div>
+        <div class="absolute bottom-0 w-full bg-surface border-t border-antOrange p-6 animate-slide-up max-h-[85vh] overflow-y-auto rounded-t-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-black text-white uppercase tracking-tight"><i class="bi bi-database text-antOrange mr-2"></i> Integrasi Server</h3>
+                <button onclick="closeSettings()" class="text-gray-400 hover:text-white bg-surfaceLight p-2 rounded-full"><i class="bi bi-x-lg"></i></button>
+            </div>
+
+            <div class="space-y-5">
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-1">Google Sheets API URL</label>
+                    <div class="relative">
+                        <input type="url" id="settingUrl" placeholder="https://script.google.com/macros/s/..." class="pro-input w-full px-3 py-3 text-sm font-mono" onfocus="showUrlHistory()" autocomplete="off">
+                        <div id="urlHistoryDropdown" class="hidden absolute top-full left-0 w-full mt-1 bg-carbon border border-surfaceLight rounded-lg shadow-xl overflow-hidden z-50"></div>
+                    </div>
+                </div>
+                
+                <div class="bg-carbon p-3 rounded-lg border border-surfaceLight flex justify-between items-center">
+                    <span id="settingsMechanic" class="text-xs text-antOrange font-bold uppercase">MEKANIK: GUEST</span>
+                    <button onclick="logoutMechanic()" class="text-[10px] bg-antRed text-white px-3 py-1 rounded uppercase font-bold">Logout</button>
+                </div>
+
+                <button onclick="saveSettings()" class="w-full py-4 bg-white text-black font-black uppercase tracking-widest rounded-lg">SIMPAN PENGATURAN</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PARTS = [
+            { id: 'tuneup', name: 'Tune Up / Servis Ringan', interval: 4000, icon: 'bi-wrench-adjustable' },
+            { id: 'oli_mesin', name: 'Oli Mesin', interval: 2500, icon: 'bi-droplet-fill' },
+            { id: 'oli_gardan', name: 'Oli Gardan (3:1)', interval: 7500, icon: 'bi-gear-wide-connected' },
+            { id: 'busi', name: 'Busi', interval: 8000, icon: 'bi-lightning-charge-fill' },
+            { id: 'kampas_rem', name: 'Kampas Rem', interval: 12000, icon: 'bi-record-circle' },
+            { id: 'filter_udara', name: 'Filter Udara', interval: 15000, icon: 'bi-wind' },
+            { id: 'vbelt', name: 'V-Belt / Rantai', interval: 24000, icon: 'bi-nut-fill' },
+            { id: 'coolant', name: 'Air Radiator', interval: 12000, icon: 'bi-thermometer-half' },
+            { id: 'injector', name: 'Bersih Injector', interval: 10000, icon: 'bi-funnel-fill' }
+        ];
+
+        let activeMechanic = localStorage.getItem('ant_mechanic') || '';
+        let appConfig = JSON.parse(localStorage.getItem('ant_config')) || { webAppUrl: '', baselines: {} };
+        let historyData = JSON.parse(localStorage.getItem('ant_history')) || [];
+        let syncQueue = JSON.parse(localStorage.getItem('ant_queue')) || [];
+        let urlHistory = JSON.parse(localStorage.getItem('ant_url_history')) || [];
+        let isSyncing = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!activeMechanic) { document.getElementById('loginOverlay').classList.remove('hidden'); } 
+            else { initApp(); }
+            
+            document.addEventListener('click', (e) => {
+                const input = document.getElementById('settingUrl');
+                const dropdown = document.getElementById('urlHistoryDropdown');
+                if (e.target !== input && !dropdown.contains(e.target)) dropdown.classList.add('hidden');
+            });
+        });
+
+        function cleanPlate(plate) {
+            return plate ? plate.toString().replace(/[^A-Z0-9]/gi, '').toUpperCase() : '';
+        }
+
+        function loginMechanic() {
+            const name = document.getElementById('mechanicNameInput').value.trim().toUpperCase();
+            if(!name) return alertErr('Masukkan Nama Mekanik!');
+            activeMechanic = name;
+            localStorage.setItem('ant_mechanic', activeMechanic);
+            document.getElementById('loginOverlay').style.opacity = '0';
+            setTimeout(() => { document.getElementById('loginOverlay').classList.add('hidden'); initApp(); }, 500);
+        }
+
+        function logoutMechanic() {
+            closeSettings(); activeMechanic = ''; localStorage.removeItem('ant_mechanic');
+            location.reload();
+        }
+
+        function initApp() {
+            document.getElementById('mainHeader').classList.remove('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            document.getElementById('settingsMechanic').innerText = `MEKANIK: ${activeMechanic}`;
+            document.getElementById('inputDate').valueAsDate = new Date();
+            
+            updateInputSuggestions(); // Update Datalists
+            renderPartsChecklist();
+            refreshVehicleData(); 
+            checkQueue();
+        }
+
+        // --- SISTEM SUGGESTION (EXCEL STYLE) ---
+        function updateInputSuggestions() {
+            // 1. Suggestion Plat Nomor
+            const plates = [...new Set(historyData.map(tx => tx.plate.toUpperCase()))];
+            const plateDatalist = document.getElementById('plateOptions');
+            plateDatalist.innerHTML = plates.map(p => `<option value="${p}">`).join('');
+
+            // 2. Suggestion Nama Pelanggan
+            const customers = [...new Set(historyData.map(tx => tx.customer))].filter(c => c && c !== 'Guest');
+            const customerDatalist = document.getElementById('customerOptions');
+            customerDatalist.innerHTML = customers.map(c => `<option value="${c}">`).join('');
+        }
+
+        function renderPartsChecklist() {
+            const container = document.getElementById('partsChecklist');
+            container.innerHTML = '';
+            PARTS.forEach(part => {
+                container.innerHTML += `
+                    <label class="relative flex items-center p-3 rounded-lg border border-surfaceLight bg-surface hover:border-gray-500 cursor-pointer transition-colors group">
+                        <input type="checkbox" id="part_${part.id}" value="${part.name}" class="hidden peer">
+                        <div class="w-4 h-4 rounded border border-gray-500 mr-3 flex items-center justify-center transition-colors"><i class="bi bi-check text-white text-xs opacity-0 transition-opacity"></i></div>
+                        <i class="bi ${part.icon} text-gray-500 mr-2 group-hover:text-silver transition-colors text-sm"></i>
+                        <span class="text-[11px] text-gray-300 font-medium select-none leading-tight">${part.name}</span>
+                    </label>
+                `;
+            });
+        }
+
+        function toggleCustomPart(checkbox) {
+            const input = document.getElementById('inputCustomPart');
+            if (checkbox.checked) { input.classList.remove('hidden'); input.focus(); } 
+            else { input.classList.add('hidden'); input.value = ''; }
+        }
+
+        function refreshVehicleData() {
+            const rawPlate = document.getElementById('inputPlate').value.trim().toUpperCase();
+            const normPlate = cleanPlate(rawPlate);
+
+            // AUTO-FILL NAMA PELANGGAN JIKA PLAT COCOK
+            if (normPlate.length >= 3) {
+                const vehicleHistory = historyData.filter(tx => cleanPlate(tx.plate) === normPlate);
+                if (vehicleHistory.length > 0) {
+                    const lastTx = vehicleHistory.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                    if (lastTx.customer && lastTx.customer !== 'Guest') {
+                        document.getElementById('inputCustomer').value = lastTx.customer;
+                    }
+                }
+            }
+
+            runDiagnostics();
+            renderHistoryList();
+        }
+
+        function runDiagnostics() {
+            const rawPlate = document.getElementById('inputPlate').value;
+            const normPlate = cleanPlate(rawPlate);
+            const currentKM = parseInt(document.getElementById('kmNow').value) || 0;
+            const container = document.getElementById('diagnosticContainer');
+            const badge = document.getElementById('diagnosticTarget');
+            
+            container.innerHTML = '';
+
+            if (normPlate.length < 3 || currentKM === 0) {
+                badge.classList.add('hidden');
+                container.innerHTML = `<p class="text-xs text-gray-500 font-mono text-center py-4 border border-dashed border-gray-700 rounded bg-carbon/50 uppercase italic tracking-tighter">Masukkan Plat & KM untuk Scan</p>`;
+                return;
+            }
+
+            badge.classList.remove('hidden');
+            badge.innerText = rawPlate.toUpperCase();
+
+            const vehicleHistory = historyData.filter(tx => cleanPlate(tx.plate) === normPlate);
+            
+            PARTS.forEach(part => {
+                const reversedHistory = [...vehicleHistory].reverse();
+                const lastService = reversedHistory.find(tx => tx.parts.includes(part.name));
+                
+                const baselineKey = `${normPlate}_${part.id}`;
+                appConfig.baselines = appConfig.baselines || {};
+                
+                let lastKM = lastService ? lastService.km : (appConfig.baselines[baselineKey] || 0);
+                let hasHistory = !!lastService;
+                let nextKM = lastKM + part.interval;
+                let used = currentKM - lastKM;
+                let progress = Math.min((used / part.interval) * 100, 100);
+
+                let color = 'bg-success'; 
+                let badgeTxt = 'SAFE';
+                
+                if (used < 0) { color = 'bg-gray-600'; badgeTxt = 'ERR: KM'; } 
+                else if (currentKM >= nextKM) { color = 'bg-antRed animate-pulse'; badgeTxt = 'REPLACE NOW'; } 
+                else if (currentKM >= nextKM - 500) { color = 'bg-warning'; badgeTxt = 'SOON'; }
+
+                let editBtn = !hasHistory ? `<button onclick="setBaseline('${normPlate}', '${part.id}', '${part.name}')" class="ml-2 text-gray-600 hover:text-white transition-colors" title="Set KM Awal Part Ini"><i class="bi bi-pencil-square text-[9px]"></i></button>` : '';
+
+                container.innerHTML += `
+                    <div class="bg-surface border border-surfaceLight p-3 rounded-lg">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[11px] text-white font-bold uppercase tracking-wider"><i class="bi ${part.icon} mr-1"></i> ${part.name}</span>
+                            <span class="text-[10px] font-black ${badgeTxt === 'SAFE' ? 'text-success' : (badgeTxt === 'SOON' ? 'text-warning' : 'text-antRed')}">${badgeTxt}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] font-mono text-gray-500 mb-1.5">
+                            <span>Terakhir: ${lastKM.toLocaleString('id-ID')} ${editBtn}</span>
+                            <span>Batas: <span class="text-white font-bold">${nextKM.toLocaleString('id-ID')}</span></span>
+                        </div>
+                        <div class="h-1 w-full bg-carbon rounded-full overflow-hidden">
+                            <div class="h-full ${color} bar-transition" style="width: ${Math.max(0, progress)}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function setBaseline(normPlate, partId, partName) {
+            const { value: kmInput } = await Swal.fire({
+                title: 'SET RECORD AWAL',
+                html: `<span class="text-xs text-gray-400">Kapan terakhir ganti <b>${partName}</b> untuk motor ini?</span>`,
+                input: 'number', inputPlaceholder: 'Masukkan KM Speedometer...',
+                background: '#171717', color: '#fff', confirmButtonColor: '#ea580c'
+            });
+            if (kmInput) {
+                appConfig.baselines[`${normPlate}_${partId}`] = parseInt(kmInput);
+                localStorage.setItem('ant_config', JSON.stringify(appConfig));
+                runDiagnostics();
+            }
+        }
+
+        function renderHistoryList() {
+            const container = document.getElementById('historyList');
+            const rawPlate = document.getElementById('inputPlate').value.trim();
+            const normPlate = cleanPlate(rawPlate);
+            const titleEl = document.getElementById('historyTitle');
+            const subtitleEl = document.getElementById('historySubtitle');
+            
+            container.innerHTML = '';
+            
+            let displayData = historyData;
+            if (normPlate.length >= 2) {
+                displayData = historyData.filter(tx => cleanPlate(tx.plate) === normPlate);
+                titleEl.innerText = "RIWAYAT KENDARAAN";
+                subtitleEl.innerText = `Catatan servis untuk ${rawPlate.toUpperCase()}`;
+            } else {
+                titleEl.innerText = "LOG RIWAYAT BENGKEL";
+                subtitleEl.innerText = "Aktivitas terbaru semua pelanggan";
+            }
+
+            if (displayData.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 font-mono text-center py-8 uppercase border border-dashed border-gray-800 rounded-xl">Data Tidak Ditemukan</p>`;
+                return;
+            }
+
+            const sorted = [...displayData].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 15);
+            
+            sorted.forEach(tx => {
+                const tgl = new Date(tx.date).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
+                container.innerHTML += `
+                    <div class="p-4 bg-carbon border border-surfaceLight rounded-xl hover:border-gray-600 transition-colors">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h4 class="text-sm font-black text-white uppercase italic">${tx.plate}</h4>
+                                <p class="text-[10px] text-gray-500 font-mono uppercase">${tgl} • ${tx.km.toLocaleString('id-ID')} KM • ${tx.customer}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-black text-success">${tx.cost > 0 ? formatRupiah(tx.cost) : 'FREE'}</span>
+                                <button onclick="deleteRecord('${tx.id}')" class="block ml-auto mt-1 text-gray-700 hover:text-antRed"><i class="bi bi-trash text-sm"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-1 mt-2">
+                            ${tx.parts.split(", ").map(p => `<span class="px-2 py-0.5 bg-surface border border-gray-800 rounded text-[9px] font-bold text-silver uppercase">${p}</span>`).join('')}
+                        </div>
+                        ${tx.note ? `<p class="text-[9px] text-yellow-600 font-mono mt-2 uppercase italic leading-tight border-t border-gray-800 pt-2">> ${tx.note}</p>` : ''}
+                    </div>
+                `;
+            });
+        }
+
+        function saveRecord() {
+            const currentKM = parseInt(document.getElementById('kmNow').value);
+            const customer = document.getElementById('inputCustomer').value.trim() || 'Guest';
+            const plate = document.getElementById('inputPlate').value.trim().toUpperCase();
+            const date = document.getElementById('inputDate').value;
+            const cost = parseInt(document.getElementById('inputCost').value.replace(/\./g, '')) || 0;
+            const note = document.getElementById('inputNote').value.trim();
+
+            let selectedParts = [];
+            PARTS.forEach(p => { if(document.getElementById(`part_${p.id}`).checked) selectedParts.push(p.name); });
+            if (document.getElementById('checkOther').checked && document.getElementById('inputCustomPart').value) {
+                selectedParts.push(document.getElementById('inputCustomPart').value.trim());
+            }
+
+            if (!plate || !currentKM || selectedParts.length === 0) return alertErr('Lengkapi Plat, KM, dan minimal 1 Part!');
+
+            const btn = document.getElementById('btnSave');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-gear animate-spin"></i> MEMPROSES...';
+
+            const txId = 'ANT' + Date.now(); 
+            const newRecord = {
+                id: txId, date: date, mechanic: activeMechanic, customer: customer,
+                plate: plate, km: currentKM, parts: selectedParts.join(", "),
+                cost: cost, note: note, timestamp: new Date().toISOString()
+            };
+
+            historyData.push(newRecord);
+            localStorage.setItem('ant_history', JSON.stringify(historyData));
+            syncQueue.push({ action: 'insert', data: newRecord });
+            localStorage.setItem('ant_queue', JSON.stringify(syncQueue));
+
+            // Reset UI
+            document.getElementById('inputCost').value = '';
+            document.getElementById('inputNote').value = '';
+            document.getElementById('inputCustomPart').classList.add('hidden');
+            document.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+            
+            updateInputSuggestions(); 
+            refreshVehicleData(); 
+            processQueue(); 
+
+            setTimeout(() => { btn.disabled = false; btn.innerHTML = '<i class="bi bi-floppy-fill"></i> SIMPAN INVOICE'; }, 1000);
+        }
+
+        function deleteRecord(id) {
+            Swal.fire({
+                title: 'HAPUS INVOICE?', text: "Data akan dihapus permanen.",
+                icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', background: '#171717', color: '#fff'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    historyData = historyData.filter(i => i.id !== id);
+                    localStorage.setItem('ant_history', JSON.stringify(historyData));
+                    syncQueue.push({ action: 'delete', id: id });
+                    localStorage.setItem('ant_queue', JSON.stringify(syncQueue));
+                    updateInputSuggestions();
+                    refreshVehicleData(); 
+                    processQueue();
+                }
+            });
+        }
+
+        function shareWhatsApp() {
+            const rawPlate = document.getElementById('inputPlate').value;
+            const normPlate = cleanPlate(rawPlate);
+            let vehicleHistory = historyData;
+            if (normPlate) vehicleHistory = historyData.filter(tx => cleanPlate(tx.plate) === normPlate);
+            if (vehicleHistory.length === 0) return alertErr("Belum ada data untuk motor ini.");
+            
+            const sortedData = [...vehicleHistory].sort((a,b)=>new Date(a.date)-new Date(b.date));
+            const latest = sortedData[sortedData.length - 1];
+            const dateStr = new Date(latest.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'});
+            const text = `🏢 *ANT MOTOR GARAGE*\n_Professional Workshop System_\n==========================\n📅 Tanggal : ${dateStr}\n👤 Pelanggan: ${latest.customer}\n🏍️ Plat No : *${latest.plate}*\n📟 Odometer : ${latest.km.toLocaleString('id-ID')} KM\n\n🛠️ *RINCIAN SERVIS:*\n${latest.parts.split(", ").map(p => `• ${p}`).join("\n")}\n📝 *Catatan:* ${latest.note || '-'}\n\n💵 *TOTAL BIAYA: ${formatRupiah(latest.cost)}*\n==========================\n_Terima kasih telah mempercayakan kendaraan Anda di Ant Motor Garage._ 🐜🏁`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        function setSyncStatus(text, state) {
+            const el = document.getElementById('syncStatus');
+            el.innerHTML = text;
+            if(state === 'sync') el.className = 'text-[9px] font-mono px-2 py-1 rounded bg-yellow-900/30 text-yellow-500 animate-pulse border border-yellow-700';
+            if(state === 'ok') el.className = 'text-[9px] font-mono px-2 py-1 rounded bg-green-900/30 text-green-500 border border-green-700';
+            if(state === 'err') el.className = 'text-[9px] font-mono px-2 py-1 rounded bg-red-900/30 text-red-500 border border-red-700';
+        }
+
+        async function processQueue() {
+            if (syncQueue.length === 0 || !appConfig.webAppUrl || isSyncing) return;
+            isSyncing = true; setSyncStatus('SYNCING...', 'sync');
+            const item = syncQueue[0];
+            let payload = item.action === 'delete' ? { action: 'delete', id: item.id } : { action: 'insert', id: item.data.id, timestamp: item.data.timestamp, record: item.data };
+
+            try {
+                await fetch(appConfig.webAppUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                syncQueue.shift(); localStorage.setItem('ant_queue', JSON.stringify(syncQueue));
+                if (syncQueue.length > 0) { isSyncing = false; processQueue(); } else { setSyncStatus('CLOUD CONNECTED', 'ok'); }
+            } catch (e) { setSyncStatus('OFFLINE', 'err'); } finally { isSyncing = false; }
+        }
+
+        function checkQueue() { syncQueue.length > 0 ? processQueue() : (appConfig.webAppUrl ? setSyncStatus('CLOUD CONNECTED', 'ok') : setSyncStatus('NO CLOUD', 'err')); }
+        function openSettings() { document.getElementById('settingUrl').value = appConfig.webAppUrl || ''; document.getElementById('settingsModal').classList.remove('hidden'); }
+        function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); document.getElementById('urlHistoryDropdown').classList.add('hidden'); }
+        function saveSettings() {
+            appConfig.webAppUrl = document.getElementById('settingUrl').value.trim();
+            localStorage.setItem('ant_config', JSON.stringify(appConfig));
+            if (appConfig.webAppUrl.startsWith('http')) {
+                urlHistory = urlHistory.filter(u => u !== appConfig.webAppUrl); urlHistory.unshift(appConfig.webAppUrl); 
+                if(urlHistory.length > 3) urlHistory.pop(); localStorage.setItem('ant_url_history', JSON.stringify(urlHistory));
+            }
+            closeSettings(); checkQueue();
+            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Config Saved', showConfirmButton: false, timer: 1500, background: '#171717', color: '#fff' });
+        }
+
+        function showUrlHistory() {
+            const dropdown = document.getElementById('urlHistoryDropdown');
+            if(urlHistory.length > 0) {
+                dropdown.innerHTML = urlHistory.map(url => `<div class="flex items-center justify-between p-3 hover:bg-surfaceLight cursor-pointer border-b border-surfaceLight last:border-0"><div class="text-[10px] text-gray-300 truncate w-10/12 font-mono" onclick="selectUrl('${url}')">${url}</div><button onclick="removeUrl(event, '${url}')" class="text-gray-500 hover:text-antRed p-1 transition-colors"><i class="bi bi-x-lg"></i></button></div>`).join('');
+                dropdown.classList.remove('hidden');
+            }
+        }
+        function selectUrl(url) { document.getElementById('settingUrl').value = url; document.getElementById('urlHistoryDropdown').classList.add('hidden'); }
+        function removeUrl(event, url) { event.stopPropagation(); urlHistory = urlHistory.filter(u => u !== url); localStorage.setItem('ant_url_history', JSON.stringify(urlHistory)); showUrlHistory(); }
+        function formatInputRupiah(input) { let val = input.value.replace(/[^0-9]/g, ''); input.value = val === '' ? '' : new Intl.NumberFormat('id-ID').format(val); }
+        function formatRupiah(num) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num); }
+        function alertErr(msg) { Swal.fire({ icon: 'error', title: 'ERROR', text: msg, background: '#171717', color: '#fff', confirmButtonColor: '#ea580c' }); }
+    </script>
+</body>
+</html>
