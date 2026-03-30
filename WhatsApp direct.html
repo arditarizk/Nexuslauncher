@@ -91,7 +91,7 @@
         });
 
         function cleanPhoneNumber(input) {
-            // 1. Ambil hanya angka saja
+            // 1. Ambil hanya angka saja (membersihkan spasi, "-", "+")
             let cleaned = input.replace(/\D/g, '');
 
             if (!cleaned) return "";
@@ -101,11 +101,11 @@
             if (cleaned.startsWith('0')) {
                 cleaned = '62' + cleaned.substring(1);
             } 
-            // Jika sudah diawali 62, biarkan
+            // Jika diawali 62, biarkan
             else if (cleaned.startsWith('62')) {
-                // do nothing, already correct
+                // do nothing
             }
-            // Jika diawali angka lain (misal langsung 857...), asumsikan itu Indonesia dan tambahkan 62
+            // Jika diawali angka 8 (format 857...), asumsikan Indonesia dan tambahkan 62
             else if (cleaned.startsWith('8')) {
                 cleaned = '62' + cleaned;
             }
@@ -120,9 +120,19 @@
             errorBox.classList.add('hidden');
 
             if (finalNumber.length >= 10) {
-                // Redirect ke URL WhatsApp
                 const waUrl = `https://wa.me/${finalNumber}`;
-                window.location.href = waUrl;
+                
+                // PERBAIKAN UTAMA: Gunakan window.top untuk keluar dari iframe
+                try {
+                    if (window.self !== window.top) {
+                        window.top.location.href = waUrl;
+                    } else {
+                        window.location.href = waUrl;
+                    }
+                } catch (e) {
+                    // Fallback jika ada error security
+                    window.location.href = waUrl;
+                }
             } else {
                 errorBox.classList.remove('hidden');
                 errorBox.textContent = "Nomor terlalu pendek atau tidak valid.";
