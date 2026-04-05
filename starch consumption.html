@@ -431,7 +431,8 @@
             document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
             const t = document.getElementById('toast'); document.getElementById('toastMsg').innerText = "Teks Disalin!";
             t.classList.add('opacity-100'); setTimeout(() => t.classList.remove('opacity-100'), 2000);
-            setTimeout(() => window.open(`https://wa.me/?text=${encodeURIComponent(document.getElementById('previewArea').innerText)}`, '_blank'), 500);
+            setTimeout(() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(document.getElementById('previewArea').innerText)}`, '_blank'), 500);
+
         }
     </script>
 </body>
