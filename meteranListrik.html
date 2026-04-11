@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Energy Tracker by Ardita</title>
+    <title>Energy Tracker AI</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -111,7 +111,7 @@
                     <div>
                         <label class="text-xs text-gray-400 ml-1 font-semibold flex justify-between">
                             Meteran Saat Ini (Akhir)
-                            <span v-if="ocrLoading" class="text-neon animate-pulse"><i class="bi bi-robot"></i> Sedang Membaca...</span>
+                            <span v-if="ocrLoading" class="text-neon animate-pulse"><i class="bi bi-robot"></i> Mengirim ke AI...</span>
                         </label>
                         <div class="relative mt-1 flex items-center gap-2">
                             <input type="number" v-model.number="currentMeter" placeholder="0000" 
@@ -251,14 +251,9 @@
                 </div>
             </div>
 
-            <!-- Watermark Footer -->
-            <footer class="text-center mt-8 pt-4">
-                <p class="text-[10px] text-gray-500 font-mono tracking-widest uppercase">Energy Tracker by Ardita Rizki Fauzi</p>
-            </footer>
-
         </main>
 
-        <!-- Settings Modal -->
+        <!-- Settings Modal (AMAN DARI GITHUB) -->
         <div v-if="isSettingsOpen" class="fixed inset-0 z-50">
             <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="closeSettings"></div>
             <div class="absolute bottom-0 w-full glass-card !rounded-b-none p-6 animate-slide-up max-h-[90vh] overflow-y-auto bg-slate-900 border-t border-neon/50 shadow-[0_-10px_40px_rgba(56,189,248,0.2)]">
@@ -270,6 +265,7 @@
                 </div>
 
                 <div class="space-y-5">
+                    
                     <!-- Manajemen User -->
                     <div class="bg-dark/80 p-4 rounded-xl border border-white/5 flex justify-between items-center shadow-inner">
                         <div>
@@ -279,6 +275,15 @@
                         <button @click="logoutUser" class="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-4 py-2 rounded-lg uppercase font-bold hover:bg-red-500 hover:text-white transition-colors shadow-lg">
                             <i class="bi bi-box-arrow-right"></i> LOGOUT
                         </button>
+                    </div>
+
+                    <!-- PENGATURAN API KEY (SANGAT AMAN DARI GITHUB) -->
+                    <div class="bg-neon/5 border border-neon/20 p-4 rounded-xl">
+                        <label class="block text-[10px] text-neon font-bold uppercase tracking-wider mb-2">Google Gemini API Key (Untuk Kamera)</label>
+                        <div class="relative">
+                            <input type="password" v-model="tempConfig.apiKey" placeholder="Tempel AIzaSy..." class="w-full bg-dark/80 border border-gray-600 rounded-lg px-4 py-3 text-sm text-white focus:border-neon outline-none font-mono">
+                        </div>
+                        <p class="text-[9px] text-gray-400 mt-2">Kunci disimpan aman di HP Anda. Ini menyelesaikan masalah GitHub Secret Detected.</p>
                     </div>
 
                     <!-- Tarif Dasar -->
@@ -324,6 +329,7 @@
 
     const DEFAULT_CONFIG = {
         webAppUrl: "",
+        apiKey: "", // Default API Key Kosong
         rate: 2500,
         initialMeter: 0,
         addons: [
@@ -337,7 +343,7 @@
 
     createApp({
         setup() {
-            // LOGIN OTOMATIS TERSIMPAN DI MEMORI
+            // LOGIN OTOMATIS
             const activeUser = ref(localStorage.getItem('st_userName') || '');
             const loginInput = ref('');
             
@@ -463,6 +469,7 @@
                 });
             };
 
+            // ---- GEMINI AI VISION LOGIC DENGAN API KEY DINAMIS ----
             const triggerCamera = () => { if (cameraInput.value) cameraInput.value.click(); };
             const triggerGallery = () => { if (galleryInput.value) galleryInput.value.click(); };
 
@@ -499,56 +506,30 @@
                 });
             };
 
-            // ==============================================================
-            // SISTEM AI VISION "AUTO-DISCOVERY" 
-            // Otomatis bertanya ke Server Google model apa yang tersedia!
-            // ==============================================================
             const processImageWithAI = async (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
+
+                // 1. CEK API KEY DULU
+                if (!config.apiKey || config.apiKey.trim() === "") {
+                    Swal.fire({
+                        icon: 'warning', title: 'Butuh Kunci Akses',
+                        text: 'Silakan klik ikon Pengaturan di pojok kanan atas, lalu tempelkan Google API Key Anda untuk mengaktifkan Kamera AI.',
+                        background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8'
+                    });
+                    return; // Berhenti di sini
+                }
 
                 imageProofFile.value = file; 
                 imageProofUrl.value = URL.createObjectURL(file);
                 ocrLoading.value = true;
 
-                const apiKey = "AIzaSyDws1Avd2aQGGZ7dtOuU_r1RnKTjtHk-3Q"; 
+                const apiKey = config.apiKey.trim(); // Ambil dari pengaturan memori HP
 
                 Swal.fire({ toast: true, position: 'top', icon: 'info', title: 'AI Mencari Server...', showConfirmButton: false, background: '#0f172a', color: '#fff' });
 
                 try {
                     const base64Data = await compressImage(file);
-                    
-                    // 1. CARI TAHU MODEL APA SAJA YANG DIIZINKAN OLEH API KEY INI
-                    const modelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-                    const modelsRes = await fetch(modelsUrl);
-                    const modelsData = await modelsRes.json();
-                    
-                    if (!modelsRes.ok) {
-                        throw new Error(modelsData.error?.message || "Gagal memverifikasi API Key ke Server.");
-                    }
-
-                    // Ambil semua model yang mendukung proses membaca (generateContent)
-                    const validModels = modelsData.models
-                        .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
-                        .map(m => m.name); // menghasilkan format "models/namamodel"
-                    
-                    if (validModels.length === 0) {
-                        throw new Error("API Key Anda tidak memiliki akses ke fitur AI Vision Google.");
-                    }
-
-                    // Pilih model Gemini yang paling canggih dan ada di daftar izin API Key Anda
-                    let selectedModelName = validModels.find(m => m.includes("gemini-2.5-flash")) || 
-                                            validModels.find(m => m.includes("gemini-2.0-flash")) || 
-                                            validModels.find(m => m.includes("gemini-1.5-flash")) || 
-                                            validModels.find(m => m.includes("gemini-pro-vision")) || 
-                                            validModels[0]; // Jika tidak ada, pakai yang pertama muncul
-
-                    let cleanModelName = selectedModelName.replace("models/", ""); // Buang tulisan 'models/'
-                    
-                    Swal.fire({ toast: true, position: 'top', icon: 'info', title: `Memakai Model: ${cleanModelName}`, showConfirmButton: false, background: '#0f172a', color: '#fff' });
-
-                    // 2. TEMBAK FOTO KE MODEL YANG SUDAH DITEMUKAN TERSEBUT
-                    const url = `https://generativelanguage.googleapis.com/v1beta/${selectedModelName}:generateContent?key=${apiKey}`;
                     
                     const prompt = "Perhatikan gambar meteran listrik prabayar ini. Saya HANYA butuh 5 digit angka utama. Angka utama berada di deretan kotak berwarna hitam (dari kiri ke kanan). ABAIKAN angka terakhir yang berada di kotak berwarna merah. ABAIKAN teks logo, ABAIKAN nomor seri panjang di bawah meteran, ABAIKAN lampu indikator. Jawab HANYA dengan 5 digit angka utama tersebut secara langsung tanpa spasi, tanpa titik, atau kata lain.";
 
@@ -561,17 +542,31 @@
                         }]
                     };
 
+                    // Auto Discovery System untuk menjamin API tembus
+                    const modelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+                    const modelsRes = await fetch(modelsUrl);
+                    if (!modelsRes.ok) throw new Error("API Key tidak valid.");
+                    const modelsData = await modelsRes.json();
+
+                    const validModels = modelsData.models
+                        .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
+                        .map(m => m.name);
+                    
+                    if (validModels.length === 0) throw new Error("API Key Anda tidak punya fitur Vision.");
+
+                    let selectedModelName = validModels.find(m => m.includes("gemini-2.5-flash")) || 
+                                            validModels.find(m => m.includes("gemini-1.5-flash")) || 
+                                            validModels[0]; 
+
+                    const url = `https://generativelanguage.googleapis.com/v1beta/${selectedModelName}:generateContent?key=${apiKey}`;
+
                     const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
                     });
 
                     const result = await response.json();
 
-                    if (!response.ok) {
-                        throw new Error(result.error?.message || "Server menolak memproses gambar.");
-                    }
+                    if (!response.ok) throw new Error(result.error?.message || "Server menolak gambar.");
 
                     const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
                     
@@ -584,7 +579,7 @@
                             currentMeter.value = detectedNumber;
                             Swal.fire({ toast: true, position: 'top', icon: 'success', title: `Ditemukan: ${detectedNumber}`, timer: 3000, showConfirmButton: false, background: '#0f172a', color: '#fff' });
                         } else {
-                            throw new Error("AI berhasil menjawab, tetapi tidak menemukan format angka di dalamnya.");
+                            throw new Error("AI berhasil menjawab, tetapi bingung mencari angka.");
                         }
                     } else {
                         throw new Error("Respon AI kosong.");
@@ -592,7 +587,7 @@
 
                 } catch (error) {
                     console.error("AI Error:", error);
-                    Swal.fire({ icon: 'error', title: 'Gagal Membaca', text: `Penyebab: ${error.message}. Silakan ketik manual, foto tetap tersimpan.`, background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8' });
+                    Swal.fire({ icon: 'error', title: 'Gagal Membaca', text: `Detail: ${error.message}. Anda bisa ketik manual.`, background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8' });
                 } finally {
                     ocrLoading.value = false;
                 }
@@ -708,9 +703,8 @@
                 waText += `--------------------------------\n`;
                 waText += `*TOTAL BAYAR: ${formatRupiah(latestRecord.totalBiaya)}*\n`;
                 waText += `--------------------------------\n`;
-                waText += `\n~ Energy Tracker by Ardita`;
 
-                // FITUR WEB SHARE API NATIVE UNTUK MENGIRIM FILE + CAPTION BERSAMAAN
+                // Coba Web Share API Native HP (Kirim Teks & Gambar Sekaligus)
                 if (imageProofFile.value && navigator.canShare) {
                     try {
                         const fileShare = new File([imageProofFile.value], 'Meteran_Listrik.jpg', { type: 'image/jpeg' });
@@ -727,11 +721,11 @@
                         }
                     } catch (err) {
                         console.log("Membatalkan Share Native:", err);
-                        return;
+                        // Lanjutkan ke wa.me jika dibatalkan/error di share pop-up
                     }
                 }
 
-                // FALLBACK JIKA BROWSER TIDAK MENDUKUNG SHARE FOTO
+                // Fallback (Hanya Teks) lewat web WhatsApp
                 const phoneIbuKos = "6285855191520";
                 window.open(`https://wa.me/${phoneIbuKos}?text=${encodeURIComponent(waText)}`, '_blank');
             };
@@ -740,6 +734,8 @@
             const applySettings = () => {
                 config.webAppUrl = tempConfig.webAppUrl;
                 config.rate = tempConfig.rate;
+                config.apiKey = tempConfig.apiKey; // Simpan API Key ke memory HP
+                
                 if (filteredHistory.value.length === 0) {
                     config.initialMeter = tempConfig.initialMeter;
                     previousMeter.value = config.initialMeter;
@@ -753,6 +749,7 @@
             const closeSettings = () => {
                 tempConfig.webAppUrl = config.webAppUrl;
                 tempConfig.rate = config.rate;
+                tempConfig.apiKey = config.apiKey;
                 isSettingsOpen.value = false;
             };
 
