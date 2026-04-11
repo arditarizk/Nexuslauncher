@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -13,6 +13,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
     <script>
         tailwind.config = {
@@ -38,739 +39,824 @@
         .input-glow:focus { outline: none; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); border-color: #38bdf8; }
         ::-webkit-scrollbar { width: 0px; }
         .chart-container { position: relative; height: 250px; width: 100%; }
-        #loginOverlay { backdrop-filter: blur(10px); }
         
+        [v-cloak] { display: none; }
         @keyframes popIn { 0% { opacity: 0; transform: translateY(20px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
         .animate-pop { animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     </style>
 </head>
 <body class="min-h-screen pb-6">
 
+<div id="app" v-cloak>
     <!-- LOGIN SCREEN -->
-    <div id="loginOverlay" class="fixed inset-0 z-50 bg-dark/95 flex flex-col items-center justify-center px-4 transition-opacity duration-500 hidden">
+    <div v-if="!activeUser" class="fixed inset-0 z-50 bg-dark/95 flex flex-col items-center justify-center px-4 transition-opacity duration-500">
         <div class="text-center mb-8 animate-pop">
             <div class="w-24 h-24 mx-auto bg-gradient-to-tr from-neon to-accent rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(56,189,248,0.4)]">
                 <i class="bi bi-lightning-charge-fill text-5xl text-white"></i>
             </div>
             <h1 class="text-3xl font-black text-white mt-4 tracking-tighter uppercase italic">Energy <span class="text-neon">Tracker</span></h1>
-            <p class="text-accent text-xs font-mono tracking-widest mt-1 uppercase">Monitor Listrik Pintar</p>
+            <p class="text-accent text-xs font-mono tracking-widest mt-1 uppercase">Powered by AI Vision</p>
         </div>
-        <div class="w-full max-w-sm glass-card p-6 border border-neon/20 shadow-[0_0_20px_rgba(56,189,248,0.1)] animate-pop" style="animation-delay: 0.1s; opacity: 0;">
+        <div class="w-full max-w-sm glass-card p-6 border border-neon/20 shadow-[0_0_20px_rgba(56,189,248,0.1)] animate-pop" style="animation-delay: 0.1s;">
             <label class="text-[10px] text-gray-400 font-bold uppercase block mb-2 text-center tracking-widest">IDENTITAS KAMAR / PENGGUNA</label>
-            <input type="text" id="userNameInput" placeholder="Misal: Kamar 1, Ardita..." class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-4 text-center font-bold text-lg mb-4 uppercase text-neon placeholder:text-gray-700 input-glow transition-all" onkeypress="if(event.key==='Enter') loginUser()">
-            <button onclick="loginUser()" class="w-full py-4 bg-gradient-to-r from-neon to-accent hover:opacity-90 text-white font-black uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95">
+            <input type="text" v-model="loginInput" @keypress.enter="loginUser" placeholder="Misal: Kamar 1, Ardita..." class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-4 text-center font-bold text-lg mb-4 uppercase text-neon placeholder:text-gray-700 input-glow transition-all">
+            <button @click="loginUser" class="w-full py-4 bg-gradient-to-r from-neon to-accent hover:opacity-90 text-white font-black uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95">
                 MULAI MENCATAT
             </button>
         </div>
-        <p class="absolute bottom-10 text-[10px] text-gray-500 font-mono tracking-widest uppercase">Energy Tracker by Ardita Rizki Fauzi</p>
     </div>
 
-    <!-- Header -->
-    <header class="fixed top-0 w-full z-40 glass-card !rounded-none !border-x-0 !border-t-0 bg-opacity-80 hidden" id="mainHeader">
-        <div class="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <i class="bi bi-lightning-charge-fill text-yellow-400 text-xl drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]"></i>
-                <div class="leading-none mt-1">
-                    <h1 class="font-bold text-lg tracking-wide leading-tight">Energy<span class="text-neon font-light">Tracker</span></h1>
-                    <p class="text-[8px] text-accent font-mono tracking-widest uppercase">By Ardita</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <div class="text-right hidden sm:block">
-                    <p class="text-[8px] text-gray-400 uppercase font-bold">Kamar</p>
-                    <p id="headerUser" class="text-xs font-bold text-white uppercase truncate max-w-[80px]">GUEST</p>
-                </div>
-                <span id="syncStatus" class="text-[10px] font-mono px-2 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700">Menunggu...</span>
-                <button onclick="openSettings()" class="p-2 rounded-full hover:bg-white/10 transition-colors text-gray-300">
-                    <i class="bi bi-gear-fill text-lg"></i>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <main class="max-w-md mx-auto px-4 pt-24 space-y-6 hidden" id="mainContent">
-
-        <!-- Main Display Card -->
-        <div class="glass-card p-6 relative overflow-hidden border-t-4 border-t-neon shadow-[0_0_20px_rgba(56,189,248,0.1)] animate-pop">
-            <div class="absolute top-0 right-0 p-4 opacity-10"><i class="bi bi-cpu text-6xl"></i></div>
-            
-            <div class="text-center mb-6">
-                <p class="text-gray-400 text-xs uppercase tracking-widest mb-1">Total Estimasi Tagihan</p>
-                <h2 id="displayTotal" class="text-4xl font-mono font-bold text-white tracking-tighter drop-shadow-lg">Rp 0</h2>
-                <div class="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
-                    <i class="bi bi-lightning-fill text-yellow-400 text-xs animate-pulse"></i>
-                    <span id="displayPemakaian" class="text-xs font-mono text-neon">0 kWh</span>
-                </div>
-            </div>
-
-            <!-- Input Section -->
-            <div class="space-y-4 relative z-10">
-                <div>
-                    <label class="text-xs text-gray-400 ml-1 font-semibold">Meteran Saat Ini (Akhir)</label>
-                    <div class="relative mt-1">
-                        <input type="number" id="inputCurrent" placeholder="0000" 
-                            class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-4 text-3xl font-mono text-white input-glow transition-all"
-                            oninput="calculate()">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-xs text-gray-400 ml-1 font-semibold">Meteran Lalu</label>
-                        <input type="number" id="inputPrevious" readonly 
-                            class="w-full mt-1 bg-dark/30 border border-gray-700 rounded-lg px-3 py-3 text-sm font-mono text-gray-500 cursor-not-allowed">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-400 ml-1 font-semibold">Tgl Pencatatan</label>
-                        <input type="date" id="inputDate" 
-                            class="w-full mt-1 bg-dark/50 border border-gray-700 rounded-lg px-3 py-3 text-sm text-gray-300 focus:border-neon outline-none transition-all"
-                            onchange="calculate()">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Add-ons (Toppings) -->
-        <div class="glass-card p-5 animate-pop" style="animation-delay: 0.1s; opacity: 0;">
-            <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
-                <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <i class="bi bi-receipt text-accent"></i> Biaya Tambahan
-                </h3>
+    <!-- MAIN DASHBOARD -->
+    <div v-else>
+        <!-- Header -->
+        <header class="fixed top-0 w-full z-40 glass-card !rounded-none !border-x-0 !border-t-0 bg-opacity-80">
+            <div class="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <span class="text-[10px] text-gray-400 uppercase font-bold">Pilih Semua</span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="toggleAllAddons" class="sr-only peer" onchange="toggleAllAddons(this)">
-                        <div class="w-7 h-4 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-neon"></div>
-                    </label>
-                </div>
-            </div>
-            <div class="space-y-2" id="addonsContainer"></div>
-        </div>
-
-        <!-- Actions -->
-        <div class="grid grid-cols-2 gap-3 animate-pop" style="animation-delay: 0.2s; opacity: 0;">
-            <button id="btnSave" onclick="saveRecord()" class="glass-card p-4 flex items-center justify-center gap-2 bg-neon/10 hover:bg-neon/20 border border-neon/30 transition-all group active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-[0_0_15px_rgba(56,189,248,0.15)]">
-                <i class="bi bi-cloud-arrow-up-fill text-neon group-hover:text-white transition-colors"></i>
-                <span class="text-sm font-bold text-neon group-hover:text-white transition-colors uppercase">SIMPAN</span>
-            </button>
-            <button onclick="shareBill()" class="glass-card p-4 flex items-center justify-center gap-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 transition-all group active:scale-95 rounded-xl shadow-[0_0_15px_rgba(34,197,94,0.15)]">
-                <i class="bi bi-whatsapp text-green-400 group-hover:text-white transition-colors"></i>
-                <span class="text-sm font-bold text-green-400 group-hover:text-white transition-colors uppercase">BAGIKAN</span>
-            </button>
-        </div>
-
-        <!-- Chart Section -->
-        <div class="glass-card p-5 animate-pop" style="animation-delay: 0.3s; opacity: 0;">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-sm font-bold text-white uppercase tracking-wider"><i class="bi bi-graph-up-arrow text-accent mr-1"></i> Grafik Pemakaian</h3>
-            </div>
-            <div class="chart-container">
-                <canvas id="usageChart"></canvas>
-            </div>
-        </div>
-
-        <!-- History Detail Section -->
-        <div class="glass-card p-5 animate-pop" style="animation-delay: 0.4s; opacity: 0;">
-            <div class="flex flex-col mb-4 border-b border-white/10 pb-2">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                        <i class="bi bi-list-ul text-neon"></i> Log Tagihan
-                    </h3>
-                    <button onclick="clearHistory()" class="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition-colors font-bold uppercase">
-                        <i class="bi bi-trash"></i> Reset
-                    </button>
-                </div>
-                <p class="text-[9px] text-gray-500 font-mono mt-1">Data difilter untuk: <span id="indicatorUser" class="text-white font-bold"></span></p>
-            </div>
-            <div id="historyDetailsList" class="space-y-3">
-                <!-- Injected via JS -->
-            </div>
-        </div>
-
-        <!-- Watermark Footer -->
-        <footer class="text-center mt-8 pt-4">
-            <p class="text-[10px] text-gray-500 font-mono tracking-widest uppercase">Energy Tracker by Ardita Rizki Fauzi</p>
-        </footer>
-
-    </main>
-
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeSettings()"></div>
-        <div class="absolute bottom-0 w-full glass-card !rounded-b-none p-6 animate-slide-up max-h-[90vh] overflow-y-auto bg-slate-900 border-t border-neon/50 shadow-[0_-10px_40px_rgba(56,189,248,0.2)]">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-black text-white uppercase tracking-tight"><i class="bi bi-sliders text-neon mr-2"></i> Pengaturan</h3>
-                <button onclick="closeSettings()" class="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10">
-                    <i class="bi bi-x-lg text-white"></i>
-                </button>
-            </div>
-
-            <div class="space-y-5">
-                <!-- Manajemen User -->
-                <div class="bg-dark/80 p-4 rounded-xl border border-white/5 flex justify-between items-center shadow-inner">
-                    <div>
-                        <p class="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Kamar Aktif</p>
-                        <span id="settingsUser" class="text-sm text-neon font-black uppercase">GUEST</span>
-                    </div>
-                    <button onclick="logoutUser()" class="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-4 py-2 rounded-lg uppercase font-bold hover:bg-red-500 hover:text-white transition-colors shadow-lg">
-                        GANTI KAMAR
-                    </button>
-                </div>
-
-                <!-- Tarif Dasar -->
-                <div>
-                    <label class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Tarif Listrik per kWh</label>
-                    <div class="relative">
-                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-mono">Rp</span>
-                        <input type="number" id="settingRate" class="w-full bg-dark/80 border border-gray-600 rounded-lg pl-12 pr-4 py-3 text-white focus:border-neon outline-none font-mono">
+                    <i class="bi bi-lightning-charge-fill text-yellow-400 text-xl drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]"></i>
+                    <div class="leading-none mt-1">
+                        <h1 class="font-bold text-lg tracking-wide leading-tight">Energy<span class="text-neon font-light">Tracker</span></h1>
+                        <p class="text-[8px] text-accent font-mono tracking-widest uppercase">By Ardita</p>
                     </div>
                 </div>
-
-                <!-- Set Awal Meteran -->
-                <div id="initialMeterContainer" class="hidden bg-dark/50 p-4 rounded-xl border border-dashed border-gray-700">
-                    <label class="block text-sm text-neon mb-1 font-bold">Set Meteran Awal</label>
-                    <p class="text-[10px] text-gray-400 mb-3">Karena riwayat akun ini kosong, masukkan angka meteran bulan lalu.</p>
-                    <input type="number" id="settingInitialMeter" class="w-full bg-dark border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-neon outline-none font-mono font-bold" placeholder="0000">
-                </div>
-
-                <!-- JSON Backup Restore -->
-                <div>
-                    <label class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2">Backup Lokal (Aman Anti Hapus Cache)</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button onclick="exportJSON()" class="py-3 bg-neon/10 hover:bg-neon/20 text-neon border border-neon/20 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 active:scale-95">
-                            <i class="bi bi-download"></i> Simpan File
-                        </button>
-                        <button onclick="document.getElementById('importFile').click()" class="py-3 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 active:scale-95">
-                            <i class="bi bi-upload"></i> Muat File
-                        </button>
-                        <input type="file" id="importFile" accept=".json" class="hidden" onchange="importJSON(event)">
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-[8px] text-gray-400 uppercase font-bold">Kamar</p>
+                        <p class="text-xs font-bold text-white uppercase truncate max-w-[80px]">{{ activeUser }}</p>
                     </div>
-                </div>
-
-                <!-- URL API Google Sheets -->
-                <div>
-                    <label class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">API Google Sheets (Cloud Sync)</label>
-                    <div class="relative">
-                        <input type="url" id="settingUrl" placeholder="Kosongkan untuk pakai default..." class="w-full bg-dark/80 border border-gray-600 rounded-lg px-4 py-3 text-sm text-white focus:border-neon outline-none font-mono" autocomplete="off">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3 pt-2">
-                    <button onclick="restoreData()" id="btnRestore" class="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs tracking-wide rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                        <i class="bi bi-cloud-arrow-down text-sm"></i> Tarik Cloud
-                    </button>
-                    <button onclick="saveSettings()" class="w-full py-3.5 bg-white text-dark font-black tracking-widest uppercase rounded-xl transition-colors shadow-lg active:scale-98 flex items-center justify-center gap-2">
-                        <i class="bi bi-check-lg text-sm"></i> Simpan
+                    <span :class="syncStatusClass">{{ syncStatusText }}</span>
+                    <button @click="isSettingsOpen = true" class="p-2 rounded-full hover:bg-white/10 transition-colors text-gray-300">
+                        <i class="bi bi-gear-fill text-lg"></i>
                     </button>
                 </div>
-
             </div>
-        </div>
-    </div>
+        </header>
 
-    <script>
-        // 🧬 DNA BAWAAN PABRIK (URL GOOGLE SHEETS)
-        const FACTORY_URL = ""; 
+        <main class="max-w-md mx-auto px-4 pt-24 space-y-6">
 
-        const DEFAULT_CONFIG = {
-            webAppUrl: FACTORY_URL,
-            rate: 2500,
-            initialMeter: 0,
-            addons: [
-                { id: 'kos', name: 'Biaya Kos', price: 350000, active: true },
-                { id: 'wifi', name: 'Internet / WiFi', price: 100000, active: false },
-                { id: 'sampah', name: 'Iuran Sampah', price: 5000, active: true },
-                { id: 'rt', name: 'Iuran RT', price: 10000, active: true },
-                { id: 'lain', name: 'Lain-lain', price: 10000, active: true }
-            ]
-        };
-
-        let activeUser = localStorage.getItem('st_userName') || '';
-        let appConfig = JSON.parse(localStorage.getItem('st_config')) || JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-        if (!appConfig.webAppUrl) appConfig.webAppUrl = FACTORY_URL;
-
-        let historyData = JSON.parse(localStorage.getItem('st_history')) || [];
-        let syncQueue = JSON.parse(localStorage.getItem('st_queue')) || [];
-        let chartInstance = null;
-        let isSyncing = false;
-
-        document.addEventListener('DOMContentLoaded', () => {
-            if (!activeUser) {
-                document.getElementById('loginOverlay').classList.remove('hidden');
-            } else {
-                initApp();
-            }
-        });
-
-         // --- SISTEM LOGIN ---
-        function loginUser() {
-            const name = document.getElementById('userNameInput').value.trim().toUpperCase();
-            if(!name) return Swal.fire({ icon: 'error', title: 'Tunggu', text: 'Tulis identitas kamar dulu!', background: '#1e293b', color: '#fff' });
-            
-            activeUser = name;
-            localStorage.setItem('st_userName', activeUser);
-            
-            document.getElementById('loginOverlay').style.opacity = '0';
-            setTimeout(() => { document.getElementById('loginOverlay').classList.add('hidden'); initApp(); }, 500);
-        }
-
-        function logoutUser() {
-            closeSettings();
-            activeUser = ''; localStorage.removeItem('st_userName');
-            location.reload(); 
-        }
-
-        function initApp() {
-            document.getElementById('mainHeader').classList.remove('hidden');
-            document.getElementById('mainContent').classList.remove('hidden');
-            document.getElementById('headerUser').innerText = activeUser;
-            document.getElementById('settingsUser').innerText = activeUser;
-            document.getElementById('indicatorUser').innerText = activeUser;
-            document.getElementById('inputDate').valueAsDate = new Date();
-
-            renderAddonsUI();
-            updateDashboardData();
-            checkQueue();
-        }
-
-        function getUserHistory() {
-            // Ambil data milik user ini, urutkan berdasarkan Tanggal A-Z, lalu ID A-Z (Kronologis murni)
-            let userHist = historyData.filter(tx => tx.userName === activeUser);
-            return userHist.sort((a, b) => {
-                if(a.date !== b.date) return new Date(a.date) - new Date(b.date);
-                return a.id > b.id ? 1 : -1;
-            });
-        }
-
-        function updateDashboardData() {
-            const userHistory = getUserHistory();
-            
-            // Auto-fill Meteran Lalu dari record TERAKHIR
-            const lastRecord = userHistory[userHistory.length - 1];
-            if (lastRecord) {
-                document.getElementById('inputPrevious').value = lastRecord.meteranSekarang;
-            } else {
-                document.getElementById('inputPrevious').value = appConfig.initialMeter || 0;
-            }
-
-            calculate();
-            renderChart();
-            renderHistoryList();
-        }
-
-        function calculate() {
-            const current = parseFloat(document.getElementById('inputCurrent').value) || 0;
-            const previous = parseFloat(document.getElementById('inputPrevious').value) || 0;
-            const usage = Math.max(0, current - previous);
-            
-            let total = usage * appConfig.rate;
-            appConfig.addons.forEach(addon => { if (addon.active) total += addon.price; });
-
-            document.getElementById('displayTotal').innerText = formatRupiah(total);
-            document.getElementById('displayPemakaian').innerText = `${usage.toLocaleString('id-ID')} kWh`;
-            
-            if (current > 0 && current <= previous) {
-                document.getElementById('inputCurrent').classList.add('border-red-500', 'text-red-500');
-            } else {
-                document.getElementById('inputCurrent').classList.remove('border-red-500', 'text-red-500');
-            }
-        }
-
-        function renderAddonsUI() {
-            const container = document.getElementById('addonsContainer');
-            container.innerHTML = '';
-            let allActive = true;
-
-            appConfig.addons.forEach((addon, index) => {
-                if(!addon.active) allActive = false;
-                const div = document.createElement('div');
-                div.className = 'flex items-center justify-between p-3 rounded-xl bg-dark/40 border border-white/5 hover:border-white/10 transition-colors';
+            <!-- Main Display Card -->
+            <div class="glass-card p-6 relative overflow-hidden border-t-4 border-t-neon shadow-[0_0_20px_rgba(56,189,248,0.1)] animate-pop">
+                <div class="absolute top-0 right-0 p-4 opacity-10"><i class="bi bi-cpu text-6xl"></i></div>
                 
-                div.innerHTML = `
-                    <div class="flex items-center gap-3 w-full">
-                        <div class="relative flex items-center">
-                            <input type="checkbox" id="check_${addon.id}" ${addon.active ? 'checked' : ''} 
-                                class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-500 transition-all checked:border-neon checked:bg-neon"
-                                onchange="toggleAddon(${index}, this.checked)">
-                            <i class="bi bi-check text-white absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm opacity-0 peer-checked:opacity-100 pointer-events-none"></i>
+                <div class="text-center mb-6">
+                    <p class="text-gray-400 text-xs uppercase tracking-widest mb-1">Total Estimasi Tagihan</p>
+                    <h2 class="text-4xl font-mono font-bold text-white tracking-tighter drop-shadow-lg">{{ formatRupiah(computedTotal) }}</h2>
+                    <div class="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                        <i class="bi bi-lightning-fill text-yellow-400 text-xs animate-pulse"></i>
+                        <span class="text-xs font-mono text-neon">{{ computedUsage }} kWh</span>
+                    </div>
+                </div>
+
+                <!-- Input Section -->
+                <div class="space-y-4 relative z-10">
+                    <div>
+                        <label class="text-xs text-gray-400 ml-1 font-semibold flex justify-between">
+                            Meteran Saat Ini (Akhir)
+                            <span v-if="ocrLoading" class="text-neon animate-pulse"><i class="bi bi-robot"></i> Sedang Membaca...</span>
+                        </label>
+                        <div class="relative mt-1 flex items-center gap-2">
+                            <input type="number" v-model.number="currentMeter" placeholder="0000" 
+                                :class="{'border-red-500 text-red-500': currentMeter > 0 && currentMeter <= previousMeter}"
+                                class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-4 text-3xl font-mono text-white input-glow transition-all">
+                            
+                            <!-- Pilihan Tombol -->
+                            <div class="flex gap-2 shrink-0">
+                                <button @click="triggerCamera" :disabled="ocrLoading" class="h-[70px] w-[55px] bg-neon/10 border border-neon/30 rounded-xl text-neon flex flex-col items-center justify-center hover:bg-neon hover:text-white transition-all active:scale-95 disabled:opacity-50">
+                                    <i v-if="ocrLoading" class="bi bi-arrow-repeat animate-spin text-xl"></i>
+                                    <i v-else class="bi bi-camera-fill text-xl"></i>
+                                    <span class="text-[8px] font-bold mt-1 uppercase tracking-wider">Foto</span>
+                                </button>
+                                
+                                <button @click="triggerGallery" :disabled="ocrLoading" class="h-[70px] w-[55px] bg-accent/10 border border-accent/30 rounded-xl text-accent flex flex-col items-center justify-center hover:bg-accent hover:text-white transition-all active:scale-95 disabled:opacity-50">
+                                    <i v-if="ocrLoading" class="bi bi-arrow-repeat animate-spin text-xl"></i>
+                                    <i v-else class="bi bi-images text-xl"></i>
+                                    <span class="text-[8px] font-bold mt-1 uppercase tracking-wider">Galeri</span>
+                                </button>
+                            </div>
+
+                            <input type="file" ref="cameraInput" accept="image/*" capture="environment" class="hidden" @change="processImageWithAI">
+                            <input type="file" ref="galleryInput" accept="image/*" class="hidden" @change="processImageWithAI">
                         </div>
-                        <span class="text-xs text-gray-300 font-bold select-none cursor-pointer flex-1 uppercase tracking-wide" onclick="document.getElementById('check_${addon.id}').click()">${addon.name}</span>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[11px] font-mono font-bold text-gray-400 select-none bg-dark px-2 py-1 rounded border border-gray-700">${formatRupiah(addon.price)}</span>
-                            <button onclick="editAddonPrice(${index})" class="text-gray-500 hover:text-neon transition-colors p-1.5 bg-white/5 rounded hover:bg-white/10">
-                                <i class="bi bi-pencil-square text-xs"></i>
+                        
+                        <div v-if="imageProofUrl" class="mt-3 relative w-full h-32 rounded-xl overflow-hidden border border-neon/50 animate-pop">
+                            <img :src="imageProofUrl" class="w-full h-full object-cover opacity-80" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-dark/90 to-transparent flex flex-col justify-end p-2">
+                                <p class="text-[10px] text-neon font-mono"><i class="bi bi-check-circle-fill"></i> Bukti Siap Dikirim Ke WA</p>
+                            </div>
+                            <button @click="removeProof" class="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white rounded-full h-7 w-7 flex items-center justify-center backdrop-blur-sm transition-colors">
+                                <i class="bi bi-x text-lg"></i>
                             </button>
                         </div>
                     </div>
-                `;
-                container.appendChild(div);
-            });
-            document.getElementById('toggleAllAddons').checked = allActive && appConfig.addons.length > 0;
-        }
 
-        function toggleAddon(index, isChecked) {
-            appConfig.addons[index].active = isChecked;
-            localStorage.setItem('st_config', JSON.stringify(appConfig));
-            renderAddonsUI(); calculate();
-        }
-
-        function toggleAllAddons(checkbox) {
-            appConfig.addons.forEach(addon => addon.active = checkbox.checked);
-            localStorage.setItem('st_config', JSON.stringify(appConfig));
-            renderAddonsUI(); calculate();
-        }
-
-        function editAddonPrice(index) {
-            const addon = appConfig.addons[index];
-            Swal.fire({
-                title: `EDIT BIAYA`,
-                html: `<span class="text-sm font-bold text-neon uppercase tracking-widest">${addon.name}</span>`,
-                input: 'number', inputValue: addon.price,
-                inputAttributes: { step: 100, min: 0 },
-                showCancelButton: true, confirmButtonText: 'SIMPAN', cancelButtonText: 'BATAL',
-                background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    appConfig.addons[index].price = parseFloat(result.value) || 0;
-                    localStorage.setItem('st_config', JSON.stringify(appConfig));
-                    renderAddonsUI(); calculate();
-                }
-            });
-        }
-
-        function saveRecord() {
-            const current = parseFloat(document.getElementById('inputCurrent').value);
-            const previous = parseFloat(document.getElementById('inputPrevious').value);
-            const date = document.getElementById('inputDate').value;
-            
-            if (!current || current <= previous) {
-                return Swal.fire({ icon: 'error', title: 'Data Invalid', text: 'Meteran saat ini harus lebih besar dari sebelumnya.', background: '#0f172a', color: '#fff' });
-            }
-
-            const btnSave = document.getElementById('btnSave');
-            btnSave.disabled = true;
-            btnSave.innerHTML = '<i class="bi bi-cpu animate-spin"></i> SYNCING...';
-
-            const usage = current - previous;
-            let cost = usage * appConfig.rate;
-            let activeAddons = [];
-            
-            appConfig.addons.forEach(addon => { if (addon.active) { cost += addon.price; activeAddons.push(addon.name); } });
-
-            const txId = 'ENG' + Date.now();
-            const recordPayload = {
-                id: txId,
-                timestamp: new Date().toISOString(),
-                userName: activeUser,
-                record: {
-                    date: date, meteranSekarang: current, meteranLalu: previous,
-                    pemakaian: usage, totalBiaya: cost, addons: activeAddons.join(", ")
-                }
-            };
-
-            historyData.push({ id: txId, userName: activeUser, ...recordPayload.record });
-            localStorage.setItem('st_history', JSON.stringify(historyData));
-            
-            syncQueue.push({ action: 'insert', data: recordPayload });
-            localStorage.setItem('st_queue', JSON.stringify(syncQueue));
-
-            document.getElementById('inputCurrent').value = '';
-            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Data Tersimpan!', showConfirmButton: false, timer: 1500, background: '#0f172a', color: '#fff' });
-
-            updateDashboardData();
-            processQueue();
-
-            setTimeout(() => {
-                btnSave.disabled = false;
-                btnSave.innerHTML = '<i class="bi bi-cloud-arrow-up-fill text-neon group-hover:text-white transition-colors"></i><span class="text-sm font-bold text-neon group-hover:text-white transition-colors uppercase">SIMPAN</span>';
-            }, 1000);
-        }
-
-        function deleteRecord(id) {
-            Swal.fire({
-                title: 'HAPUS DATA?', text: "Tagihan ini akan dihapus dari sistem.",
-                icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#334155', confirmButtonText: 'YA, HAPUS', background: '#0f172a', color: '#fff'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    historyData = historyData.filter(item => item.id !== id);
-                    localStorage.setItem('st_history', JSON.stringify(historyData));
-                    
-                    syncQueue.push({ action: 'delete', id: id });
-                    localStorage.setItem('st_queue', JSON.stringify(syncQueue));
-
-                    updateDashboardData();
-                    Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Terhapus!', showConfirmButton: false, timer: 1500, background: '#0f172a', color: '#fff' });
-                    processQueue();
-                }
-            });
-        }
-
-        function renderHistoryList() {
-            const container = document.getElementById('historyDetailsList');
-            container.innerHTML = '';
-            
-            const userHistory = getUserHistory();
-
-            if (userHistory.length === 0) {
-                container.innerHTML = `<div class="p-6 border border-dashed border-gray-700 text-center rounded-xl bg-dark/50"><p class="text-xs text-gray-500 font-mono uppercase">Belum ada riwayat tagihan.</p></div>`;
-                return;
-            }
-
-            // Balik untuk TAMPILAN: Terbaru di atas
-            const reversedData = [...userHistory].reverse();
-
-            reversedData.forEach(tx => {
-                const tgl = new Date(tx.date).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
-                container.innerHTML += `
-                    <div class="flex items-center justify-between bg-dark/50 border border-white/5 p-4 rounded-xl hover:border-gray-600 transition-colors">
+                    <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <p class="text-xs text-white font-bold uppercase tracking-widest mb-1"><i class="bi bi-calendar-check text-neon mr-1"></i> ${tgl}</p>
-                            <p class="text-[10px] text-gray-400 font-mono">${tx.meteranLalu} <i class="bi bi-arrow-right text-gray-600"></i> ${tx.meteranSekarang} <span class="text-neon font-bold ml-1">(${tx.pemakaian} kWh)</span></p>
+                            <label class="text-xs text-gray-400 ml-1 font-semibold">Meteran Lalu</label>
+                            <input type="number" v-model.number="previousMeter" readonly 
+                                class="w-full mt-1 bg-dark/30 border border-gray-700 rounded-lg px-3 py-3 text-sm font-mono text-gray-500 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-400 ml-1 font-semibold">Tgl Pencatatan</label>
+                            <input type="date" v-model="recordDate" 
+                                class="w-full mt-1 bg-dark/50 border border-gray-700 rounded-lg px-3 py-3 text-sm text-gray-300 focus:border-neon outline-none transition-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add-ons (Toppings) -->
+            <div class="glass-card p-5 animate-pop" style="animation-delay: 0.1s;">
+                <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="bi bi-receipt text-accent"></i> Biaya Tambahan
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-gray-400 uppercase font-bold">Pilih Semua</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" v-model="allAddonsActive" @change="toggleAllAddons" class="sr-only peer">
+                            <div class="w-7 h-4 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-neon"></div>
+                        </label>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div v-for="(addon, index) in config.addons" :key="addon.id" class="flex items-center justify-between p-3 rounded-xl bg-dark/40 border border-white/5 hover:border-white/10 transition-colors">
+                        <div class="flex items-center gap-3 w-full">
+                            <div class="relative flex items-center">
+                                <input type="checkbox" v-model="addon.active" @change="saveConfig" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-500 transition-all checked:border-neon checked:bg-neon">
+                                <i class="bi bi-check text-white absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm opacity-0 peer-checked:opacity-100 pointer-events-none"></i>
+                            </div>
+                            <span class="text-xs text-gray-300 font-bold select-none cursor-pointer flex-1 uppercase tracking-wide" @click="addon.active = !addon.active; saveConfig()">{{ addon.name }}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[11px] font-mono font-bold text-gray-400 select-none bg-dark px-2 py-1 rounded border border-gray-700">{{ formatRupiah(addon.price) }}</span>
+                                <button @click="editAddonPrice(index)" class="text-gray-500 hover:text-neon transition-colors p-1.5 bg-white/5 rounded hover:bg-white/10">
+                                    <i class="bi bi-pencil-square text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="grid grid-cols-2 gap-3 animate-pop" style="animation-delay: 0.2s;">
+                <button @click="saveRecord" :disabled="isSaving" class="glass-card p-4 flex items-center justify-center gap-2 bg-neon/10 hover:bg-neon/20 border border-neon/30 transition-all group active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-[0_0_15px_rgba(56,189,248,0.15)]">
+                    <i :class="isSaving ? 'bi-cpu animate-spin' : 'bi-cloud-arrow-up-fill'" class="bi text-neon group-hover:text-white transition-colors"></i>
+                    <span class="text-sm font-bold text-neon group-hover:text-white transition-colors uppercase">{{ isSaving ? 'SYNCING' : 'SIMPAN' }}</span>
+                </button>
+                <button @click="shareBill" class="glass-card p-4 flex items-center justify-center gap-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 transition-all group active:scale-95 rounded-xl shadow-[0_0_15px_rgba(34,197,94,0.15)]">
+                    <i class="bi bi-whatsapp text-green-400 group-hover:text-white transition-colors"></i>
+                    <span class="text-sm font-bold text-green-400 group-hover:text-white transition-colors uppercase">KIRIM WA</span>
+                </button>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="glass-card p-5 animate-pop" style="animation-delay: 0.3s;">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider"><i class="bi bi-graph-up-arrow text-accent mr-1"></i> Grafik Pemakaian</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+
+            <!-- History Detail Section -->
+            <div class="glass-card p-5 animate-pop" style="animation-delay: 0.4s;">
+                <div class="flex flex-col mb-4 border-b border-white/10 pb-2">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                            <i class="bi bi-list-ul text-neon"></i> Log Tagihan
+                        </h3>
+                        <button @click="clearHistory" class="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition-colors font-bold uppercase">
+                            <i class="bi bi-trash"></i> Reset
+                        </button>
+                    </div>
+                    <p class="text-[9px] text-gray-500 font-mono mt-1">Data difilter untuk: <span class="text-white font-bold">{{ activeUser }}</span></p>
+                </div>
+                
+                <div class="space-y-3">
+                    <div v-if="filteredHistory.length === 0" class="p-6 border border-dashed border-gray-700 text-center rounded-xl bg-dark/50">
+                        <p class="text-xs text-gray-500 font-mono uppercase">Belum ada riwayat tagihan.</p>
+                    </div>
+                    <div v-for="tx in reversedHistory" :key="tx.id" class="flex items-center justify-between bg-dark/50 border border-white/5 p-4 rounded-xl hover:border-gray-600 transition-colors">
+                        <div>
+                            <p class="text-xs text-white font-bold uppercase tracking-widest mb-1"><i class="bi bi-calendar-check text-neon mr-1"></i> {{ formatDate(tx.date) }}</p>
+                            <p class="text-[10px] text-gray-400 font-mono">{{ tx.meteranLalu }} <i class="bi bi-arrow-right text-gray-600"></i> {{ tx.meteranSekarang }} <span class="text-neon font-bold ml-1">({{ tx.pemakaian }} kWh)</span></p>
                         </div>
                         <div class="flex flex-col items-end">
-                            <span class="text-sm font-mono font-black text-success">${formatRupiah(tx.totalBiaya)}</span>
-                            <button onclick="deleteRecord('${tx.id}')" class="text-gray-600 hover:text-red-500 transition-colors p-1 mt-1" title="Hapus">
+                            <span class="text-sm font-mono font-black text-green-400">{{ formatRupiah(tx.totalBiaya) }}</span>
+                            <button @click="deleteRecord(tx.id)" class="text-gray-600 hover:text-red-500 transition-colors p-1 mt-1" title="Hapus">
                                 <i class="bi bi-trash-fill"></i>
                             </button>
                         </div>
                     </div>
-                `;
-            });
-        }
-        // --- EXPORT WHATSAPP (MENGGUNAKAN DATA TERSIMPAN) ---
-        function shareBill() {
-            const userHistory = getUserHistory();
-            if (userHistory.length === 0) {
-                return Swal.fire({ icon: 'warning', title: 'Belum Ada Data', text: 'Simpan data meteran dulu sebelum dibagikan!', background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8' });
-            }
+                </div>
+            </div>
 
-            // AMBIL DATA TERAKHIR DARI DATABASE
-            const latestRecord = userHistory[userHistory.length - 1];
+            <!-- Watermark Footer -->
+            <footer class="text-center mt-8 pt-4">
+                <p class="text-[10px] text-gray-500 font-mono tracking-widest uppercase">Energy Tracker by Ardita Rizki Fauzi</p>
+            </footer>
 
-            const dateStr = new Date(latestRecord.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'});
+        </main>
+
+        <!-- Settings Modal -->
+        <div v-if="isSettingsOpen" class="fixed inset-0 z-50">
+            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="closeSettings"></div>
+            <div class="absolute bottom-0 w-full glass-card !rounded-b-none p-6 animate-slide-up max-h-[90vh] overflow-y-auto bg-slate-900 border-t border-neon/50 shadow-[0_-10px_40px_rgba(56,189,248,0.2)]">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-black text-white uppercase tracking-tight"><i class="bi bi-sliders text-neon mr-2"></i> Pengaturan</h3>
+                    <button @click="closeSettings" class="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10">
+                        <i class="bi bi-x-lg text-white"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-5">
+                    <!-- Manajemen User -->
+                    <div class="bg-dark/80 p-4 rounded-xl border border-white/5 flex justify-between items-center shadow-inner">
+                        <div>
+                            <p class="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Login Sebagai:</p>
+                            <span class="text-sm text-neon font-black uppercase">{{ activeUser }}</span>
+                        </div>
+                        <button @click="logoutUser" class="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-4 py-2 rounded-lg uppercase font-bold hover:bg-red-500 hover:text-white transition-colors shadow-lg">
+                            <i class="bi bi-box-arrow-right"></i> LOGOUT
+                        </button>
+                    </div>
+
+                    <!-- Tarif Dasar -->
+                    <div>
+                        <label class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Tarif Listrik per kWh</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-mono">Rp</span>
+                            <input type="number" v-model.number="tempConfig.rate" class="w-full bg-dark/80 border border-gray-600 rounded-lg pl-12 pr-4 py-3 text-white focus:border-neon outline-none font-mono">
+                        </div>
+                    </div>
+
+                    <!-- Set Awal Meteran -->
+                    <div v-if="filteredHistory.length === 0" class="bg-dark/50 p-4 rounded-xl border border-dashed border-gray-700">
+                        <label class="block text-sm text-neon mb-1 font-bold">Set Meteran Awal</label>
+                        <p class="text-[10px] text-gray-400 mb-3">Karena riwayat akun ini kosong, masukkan angka meteran bulan lalu.</p>
+                        <input type="number" v-model.number="tempConfig.initialMeter" class="w-full bg-dark border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-neon outline-none font-mono font-bold" placeholder="0000">
+                    </div>
+
+                    <!-- URL API Google Sheets -->
+                    <div>
+                        <label class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">API Google Sheets (Cloud Sync)</label>
+                        <div class="relative">
+                            <input type="url" v-model="tempConfig.webAppUrl" placeholder="Kosongkan untuk pakai default..." class="w-full bg-dark/80 border border-gray-600 rounded-lg px-4 py-3 text-sm text-white focus:border-neon outline-none font-mono" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button @click="restoreData" class="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs tracking-wide rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                            <i class="bi bi-cloud-arrow-down text-sm"></i> Tarik Cloud
+                        </button>
+                        <button @click="applySettings" class="w-full py-3.5 bg-white text-dark font-black tracking-widest uppercase rounded-xl transition-colors shadow-lg active:scale-[0.98] flex items-center justify-center gap-2">
+                            <i class="bi bi-check-lg text-sm"></i> Simpan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
+
+    const DEFAULT_CONFIG = {
+        webAppUrl: "",
+        rate: 2500,
+        initialMeter: 0,
+        addons: [
+            { id: 'kos', name: 'Biaya Kos', price: 350000, active: true },
+            { id: 'wifi', name: 'Internet / WiFi', price: 100000, active: false },
+            { id: 'sampah', name: 'Iuran Sampah', price: 5000, active: true },
+            { id: 'rt', name: 'Iuran RT', price: 10000, active: true },
+            { id: 'lain', name: 'Lain-lain', price: 10000, active: true }
+        ]
+    };
+
+    createApp({
+        setup() {
+            // LOGIN OTOMATIS TERSIMPAN DI MEMORI
+            const activeUser = ref(localStorage.getItem('st_userName') || '');
+            const loginInput = ref('');
             
-            // Rekonstruksi rincian biaya dari string Addons
-            let details = "";
-            if (latestRecord.addons && latestRecord.addons.trim() !== "") {
-                const addonsList = latestRecord.addons.split(", ");
-                addonsList.forEach(addonName => {
-                    // Cari harga terkini di config
-                    const matchedAddon = appConfig.addons.find(a => a.name === addonName);
-                    if (matchedAddon) {
-                        details += `- ${matchedAddon.name}: ${formatRupiah(matchedAddon.price)}\n`;
-                    } else {
-                        details += `- ${addonName}\n`;
+            const config = reactive(JSON.parse(localStorage.getItem('st_config')) || JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
+            const tempConfig = reactive({...config});
+            
+            const historyData = ref(JSON.parse(localStorage.getItem('st_history')) || []);
+            const syncQueue = ref(JSON.parse(localStorage.getItem('st_queue')) || []);
+            
+            const currentMeter = ref(null);
+            const previousMeter = ref(0);
+            const recordDate = ref(new Date().toISOString().split('T')[0]);
+            
+            const isSettingsOpen = ref(false);
+            const isSaving = ref(false);
+            const syncStatusText = ref('Menunggu...');
+            const syncStatusClass = ref('text-[10px] font-mono px-2 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700');
+            const allAddonsActive = ref(true);
+
+            // OCR Refs
+            const cameraInput = ref(null);
+            const galleryInput = ref(null);
+            const imageProofUrl = ref(null);
+            const imageProofFile = ref(null);
+            const ocrLoading = ref(false);
+
+            let chartInstance = null;
+            let isSyncingProcess = false;
+
+            const filteredHistory = computed(() => {
+                return historyData.value
+                    .filter(tx => tx.userName === activeUser.value)
+                    .sort((a, b) => {
+                        if (a.date !== b.date) return new Date(a.date) - new Date(b.date);
+                        return a.id > b.id ? 1 : -1;
+                    });
+            });
+
+            const reversedHistory = computed(() => [...filteredHistory.value].reverse());
+
+            const computedUsage = computed(() => {
+                const c = parseFloat(currentMeter.value) || 0;
+                const p = parseFloat(previousMeter.value) || 0;
+                return Math.max(0, c - p);
+            });
+
+            const computedTotal = computed(() => {
+                let total = computedUsage.value * config.rate;
+                config.addons.forEach(addon => { if (addon.active) total += addon.price; });
+                return total;
+            });
+
+            watch(() => config.addons, () => {
+                allAddonsActive.value = config.addons.every(a => a.active);
+            }, { deep: true });
+
+            watch(filteredHistory, () => {
+                updatePreviousMeter();
+                nextTick(renderChart);
+            }, { deep: true });
+
+            // LOGIKA LOGIN
+            const loginUser = () => {
+                const name = loginInput.value.trim().toUpperCase();
+                if (!name) return Swal.fire({ icon: 'error', title: 'Tunggu', text: 'Tulis identitas kamar dulu!', background: '#1e293b', color: '#fff' });
+                activeUser.value = name;
+                localStorage.setItem('st_userName', activeUser.value);
+                initDashboard();
+            };
+
+            const logoutUser = () => {
+                Swal.fire({
+                    title: 'Keluar Akun?', text: "Anda akan diminta memasukkan nama lagi.", icon: 'warning',
+                    showCancelButton: true, confirmButtonText: 'Ya, Keluar', cancelButtonText: 'Batal',
+                    background: '#0f172a', color: '#fff'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        activeUser.value = '';
+                        loginInput.value = '';
+                        localStorage.removeItem('st_userName');
+                        isSettingsOpen.value = false;
                     }
                 });
-            }
+            };
 
-            // Bikin format teks bersih untuk WhatsApp
-            let waText = `[ TAGIHAN LISTRIK BULANAN ]\n`;
-            waText += `Kamar/User: ${activeUser}\n`;
-            waText += `Tanggal: ${dateStr}\n`;
-            waText += `--------------------------------\n\n`;
-            
-            waText += `DATA METERAN:\n`;
-            waText += `Akhir: ${latestRecord.meteranSekarang}\n`;
-            waText += `Awal : ${latestRecord.meteranLalu}\n`;
-            waText += `Pakai: ${latestRecord.pemakaian} kWh\n\n`;
+            const initDashboard = () => {
+                updatePreviousMeter();
+                allAddonsActive.value = config.addons.every(a => a.active);
+                nextTick(renderChart);
+                checkQueue();
+            };
 
-            waText += `RINCIAN BIAYA:\n`;
-            waText += `- Listrik: ${formatRupiah(latestRecord.pemakaian * appConfig.rate)}\n`;
-            waText += details;
-            
-            waText += `--------------------------------\n`;
-            waText += `TOTAL BAYAR: ${formatRupiah(latestRecord.totalBiaya)}\n`;
-            waText += `--------------------------------\n`;
-            waText += `-- Energy Tracker by Ardita --`;
-
-            window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank');
-        }
-
-        // --- SISTEM JSON BACKUP (LOKAL) ---
-        function exportJSON() {
-            if (historyData.length === 0) return alertErr("Belum ada data untuk dibackup!");
-            const dataStr = JSON.stringify(historyData, null, 2);
-            const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `MeteranListrik_Backup_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'File JSON Terunduh!', showConfirmButton: false, timer: 2000, background: '#0f172a', color: '#fff'});
-        }
-
-        function importJSON(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-                    if (!Array.isArray(importedData)) throw new Error("Format JSON tidak valid");
-
-                    Swal.fire({
-                        title: 'Import Data Lokal',
-                        text: "Apakah kamu mau menggabungkan data ini atau menimpa semua data yang ada?",
-                        icon: 'question',
-                        showDenyButton: true, showCancelButton: true,
-                        confirmButtonText: 'Gabungkan', denyButtonText: `Timpa Semua`, cancelButtonText: 'Batal',
-                        background: '#0f172a', color: '#fff'
-                    }).then((result) => {
-                        if (result.isConfirmed) { 
-                            const existingIds = new Set(historyData.map(t => t.id));
-                            const newData = importedData.filter(t => !existingIds.has(t.id));
-                            historyData = [...historyData, ...newData];
-                        } else if (result.isDenied) { 
-                            historyData = importedData;
-                        } else { event.target.value = ''; return; }
-
-                        localStorage.setItem('st_history', JSON.stringify(historyData));
-                        updateDashboardData();
-                        event.target.value = ''; 
-                        
-                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Data Berhasil Diimport!', showConfirmButton: false, timer: 2000, background: '#0f172a', color: '#fff'});
-                        closeSettings();
-                    });
-                } catch (err) {
-                    Swal.fire({ icon: 'error', title: 'Error', text: "File JSON rusak atau tidak valid!", background: '#0f172a', color: '#fff' });
-                    event.target.value = '';
+            const updatePreviousMeter = () => {
+                const hist = filteredHistory.value;
+                if (hist.length > 0) {
+                    previousMeter.value = hist[hist.length - 1].meteranSekarang;
+                } else {
+                    previousMeter.value = config.initialMeter || 0;
                 }
             };
-            reader.readAsText(file);
-        }
 
-        // --- SISTEM CLOUD SYNC & RESTORE ---
-        function setStatus(text, type) {
-            const el = document.getElementById('syncStatus');
-            el.innerHTML = text;
-            if(type === 'sync') el.className = 'text-[10px] font-mono px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 animate-pulse';
-            if(type === 'ok') el.className = 'text-[10px] font-mono px-2 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30';
-            if(type === 'err') el.className = 'text-[10px] font-mono px-2 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30';
-            if(type === 'wait') el.className = 'text-[10px] font-mono px-2 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700';
-        }
+            const saveConfig = () => { localStorage.setItem('st_config', JSON.stringify(config)); };
 
-        async function processQueue() {
-            if (syncQueue.length === 0) return;
-            if (!appConfig.webAppUrl) { setStatus('URL Kosong', 'err'); return; }
-            if (isSyncing) return;
+            const toggleAllAddons = () => {
+                config.addons.forEach(addon => addon.active = allAddonsActive.value);
+                saveConfig();
+            };
 
-            isSyncing = true; setStatus('Menyinkronkan...', 'sync');
-            const currentItem = syncQueue[0];
-            
-            let payloadToSend = {};
-            if (currentItem.action === 'delete') {
-                payloadToSend = { action: 'delete', id: currentItem.id };
-            } else {
-                payloadToSend = { action: 'insert', id: currentItem.data.id, timestamp: currentItem.data.timestamp, userName: currentItem.data.userName, record: currentItem.data.record };
-            }
+            const editAddonPrice = (index) => {
+                const addon = config.addons[index];
+                Swal.fire({
+                    title: `EDIT BIAYA`,
+                    html: `<span class="text-sm font-bold text-neon uppercase tracking-widest">${addon.name}</span>`,
+                    input: 'number', inputValue: addon.price,
+                    inputAttributes: { step: 100, min: 0 },
+                    showCancelButton: true, confirmButtonText: 'SIMPAN', cancelButtonText: 'BATAL',
+                    background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        config.addons[index].price = parseFloat(result.value) || 0;
+                        saveConfig();
+                    }
+                });
+            };
 
-            try {
-                await fetch(appConfig.webAppUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payloadToSend) });
-                syncQueue.shift(); localStorage.setItem('st_queue', JSON.stringify(syncQueue));
-                if (syncQueue.length > 0) { isSyncing = false; processQueue(); } 
-                else { setStatus('Tersimpan Cloud', 'ok'); setTimeout(() => setStatus('Terkoneksi', 'wait'), 3000); }
-            } catch (e) { setStatus('Menunggu Sinyal', 'err'); } finally { isSyncing = false; }
-        }
+            const triggerCamera = () => { if (cameraInput.value) cameraInput.value.click(); };
+            const triggerGallery = () => { if (galleryInput.value) galleryInput.value.click(); };
 
-        function checkQueue() { syncQueue.length > 0 ? processQueue() : (appConfig.webAppUrl ? setStatus('Terkoneksi', 'wait') : setStatus('Belum Koneksi', 'err')); }
+            const removeProof = () => {
+                imageProofUrl.value = null;
+                imageProofFile.value = null;
+                if (cameraInput.value) cameraInput.value.value = '';
+                if (galleryInput.value) galleryInput.value.value = '';
+            };
 
-        async function restoreData() {
-            if (!appConfig.webAppUrl || appConfig.webAppUrl === '') { return Swal.fire({ icon: 'error', title: 'Oops', text: 'URL Google Sheet belum diset!', background: '#0f172a', color: '#fff' }); }
-            const btn = document.getElementById('btnRestore');
-            btn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin text-sm"></i> Sedot Data...'; btn.disabled = true;
+            const compressImage = (file) => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        const MAX_WIDTH = 1024;
+                        let width = img.width;
+                        let height = img.height;
 
-            try {
-                const response = await fetch(appConfig.webAppUrl);
-                const data = await response.json();
-                if (data && data.length > 0) {
-                    historyData = data.map(item => ({
-                        id: item.id, userName: item.userName, date: new Date(item.date).toISOString().split('T')[0],
-                        meteranSekarang: Number(item.meteranSekarang), meteranLalu: Number(item.meteranLalu),
-                        pemakaian: Number(item.pemakaian), totalBiaya: Number(item.totalBiaya),
-                        addons: item.addons, timestamp: item.timestamp
-                    }));
-                    localStorage.setItem('st_history', JSON.stringify(historyData));
-                    updateDashboardData();
-                    Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Data Pulih!', showConfirmButton: false, timer: 2000, background: '#0f172a', color: '#fff' });
-                } else { Swal.fire({ icon: 'info', title: 'Kosong', text: 'Tidak ada data di Google Sheet.', background: '#0f172a', color: '#fff' }); }
-            } catch (e) { Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menarik data dari Cloud.', background: '#0f172a', color: '#fff' }); } 
-            finally { btn.innerHTML = '<i class="bi bi-cloud-arrow-down text-sm"></i> Tarik Cloud'; btn.disabled = false; closeSettings(); }
-        }
+                        if (width > MAX_WIDTH) {
+                            height = Math.round((height * MAX_WIDTH) / width);
+                            width = MAX_WIDTH;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        resolve(dataUrl.split(',')[1]); 
+                    };
+                    img.src = URL.createObjectURL(file);
+                });
+            };
 
-        // --- PENGATURAN UI ---
-        function openSettings() {
-            document.getElementById('settingUrl').value = appConfig.webAppUrl || '';
-            document.getElementById('settingRate').value = appConfig.rate;
-            const initialContainer = document.getElementById('initialMeterContainer');
-            if (getUserHistory().length === 0) {
-                initialContainer.classList.remove('hidden'); document.getElementById('settingInitialMeter').value = appConfig.initialMeter;
-            } else { initialContainer.classList.add('hidden'); }
-            document.getElementById('settingsModal').classList.remove('hidden');
-        }
+            // ==============================================================
+            // SISTEM AI VISION "AUTO-DISCOVERY" 
+            // Otomatis bertanya ke Server Google model apa yang tersedia!
+            // ==============================================================
+            const processImageWithAI = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
 
-        function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); }
+                imageProofFile.value = file; 
+                imageProofUrl.value = URL.createObjectURL(file);
+                ocrLoading.value = true;
 
-        function saveSettings() {
-            let urlInput = document.getElementById('settingUrl').value.trim();
-            if (urlInput === '') urlInput = FACTORY_URL;
+                const apiKey = "AIzaSyDws1Avd2aQGGZ7dtOuU_r1RnKTjtHk-3Q"; 
 
-            appConfig.webAppUrl = urlInput;
-            appConfig.rate = parseFloat(document.getElementById('settingRate').value) || 2500;
-            
-            if (getUserHistory().length === 0) {
-                appConfig.initialMeter = parseFloat(document.getElementById('settingInitialMeter').value) || 0;
-                document.getElementById('inputPrevious').value = appConfig.initialMeter;
-            }
-            localStorage.setItem('st_config', JSON.stringify(appConfig));
-            closeSettings(); calculate(); checkQueue();
-            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Disimpan', showConfirmButton: false, timer: 1500, background: '#0f172a', color: '#fff' });
-        }
+                Swal.fire({ toast: true, position: 'top', icon: 'info', title: 'AI Mencari Server...', showConfirmButton: false, background: '#0f172a', color: '#fff' });
 
-        function formatRupiah(number) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number); }
+                try {
+                    const base64Data = await compressImage(file);
+                    
+                    // 1. CARI TAHU MODEL APA SAJA YANG DIIZINKAN OLEH API KEY INI
+                    const modelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+                    const modelsRes = await fetch(modelsUrl);
+                    const modelsData = await modelsRes.json();
+                    
+                    if (!modelsRes.ok) {
+                        throw new Error(modelsData.error?.message || "Gagal memverifikasi API Key ke Server.");
+                    }
 
-        function clearHistory() {
-            Swal.fire({ title: 'HAPUS DATA?', text: `Semua data meteran milik ${activeUser} akan dihapus.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#334155', confirmButtonText: 'YA, HAPUS', background: '#0f172a', color: '#fff' }).then((res) => {
-                if (res.isConfirmed) {
-                    historyData = historyData.filter(tx => tx.userName !== activeUser);
-                    localStorage.setItem('st_history', JSON.stringify(historyData));
-                    updateDashboardData();
-                    Swal.fire({ title: 'Terhapus!', icon: 'success', background: '#0f172a', color: '#fff', timer: 1000, showConfirmButton: false });
+                    // Ambil semua model yang mendukung proses membaca (generateContent)
+                    const validModels = modelsData.models
+                        .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
+                        .map(m => m.name); // menghasilkan format "models/namamodel"
+                    
+                    if (validModels.length === 0) {
+                        throw new Error("API Key Anda tidak memiliki akses ke fitur AI Vision Google.");
+                    }
+
+                    // Pilih model Gemini yang paling canggih dan ada di daftar izin API Key Anda
+                    let selectedModelName = validModels.find(m => m.includes("gemini-2.5-flash")) || 
+                                            validModels.find(m => m.includes("gemini-2.0-flash")) || 
+                                            validModels.find(m => m.includes("gemini-1.5-flash")) || 
+                                            validModels.find(m => m.includes("gemini-pro-vision")) || 
+                                            validModels[0]; // Jika tidak ada, pakai yang pertama muncul
+
+                    let cleanModelName = selectedModelName.replace("models/", ""); // Buang tulisan 'models/'
+                    
+                    Swal.fire({ toast: true, position: 'top', icon: 'info', title: `Memakai Model: ${cleanModelName}`, showConfirmButton: false, background: '#0f172a', color: '#fff' });
+
+                    // 2. TEMBAK FOTO KE MODEL YANG SUDAH DITEMUKAN TERSEBUT
+                    const url = `https://generativelanguage.googleapis.com/v1beta/${selectedModelName}:generateContent?key=${apiKey}`;
+                    
+                    const prompt = "Perhatikan gambar meteran listrik prabayar ini. Saya HANYA butuh 5 digit angka utama. Angka utama berada di deretan kotak berwarna hitam (dari kiri ke kanan). ABAIKAN angka terakhir yang berada di kotak berwarna merah. ABAIKAN teks logo, ABAIKAN nomor seri panjang di bawah meteran, ABAIKAN lampu indikator. Jawab HANYA dengan 5 digit angka utama tersebut secara langsung tanpa spasi, tanpa titik, atau kata lain.";
+
+                    const payload = {
+                        contents: [{
+                            parts: [
+                                { text: prompt },
+                                { inlineData: { mimeType: "image/jpeg", data: base64Data } }
+                            ]
+                        }]
+                    };
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.error?.message || "Server menolak memproses gambar.");
+                    }
+
+                    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    if (responseText) {
+                        const matches = responseText.match(/\d+/g);
+                        if (matches) {
+                            const rawNumber = matches.join('');
+                            const detectedNumber = parseInt(rawNumber, 10);
+                            
+                            currentMeter.value = detectedNumber;
+                            Swal.fire({ toast: true, position: 'top', icon: 'success', title: `Ditemukan: ${detectedNumber}`, timer: 3000, showConfirmButton: false, background: '#0f172a', color: '#fff' });
+                        } else {
+                            throw new Error("AI berhasil menjawab, tetapi tidak menemukan format angka di dalamnya.");
+                        }
+                    } else {
+                        throw new Error("Respon AI kosong.");
+                    }
+
+                } catch (error) {
+                    console.error("AI Error:", error);
+                    Swal.fire({ icon: 'error', title: 'Gagal Membaca', text: `Penyebab: ${error.message}. Silakan ketik manual, foto tetap tersimpan.`, background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8' });
+                } finally {
+                    ocrLoading.value = false;
                 }
-            })
-        }
+            };
 
-        function renderChart() {
-            const userHistory = getUserHistory();
-            const ctx = document.getElementById('usageChart').getContext('2d');
-            const labels = userHistory.map(d => new Date(d.date).toLocaleDateString('id-ID', { month: 'short' }));
-            const costs = userHistory.map(d => d.totalBiaya);
-            const usage = userHistory.map(d => d.pemakaian);
+            // ---- TRANSAKSI & CLOUD DATA PAYLOAD ----
+            const saveRecord = () => {
+                const current = parseFloat(currentMeter.value);
+                const previous = parseFloat(previousMeter.value);
+                
+                if (!current || current <= previous) {
+                    return Swal.fire({ icon: 'error', title: 'Data Invalid', text: 'Meteran saat ini harus lebih besar dari sebelumnya.', background: '#0f172a', color: '#fff' });
+                }
 
-            if (chartInstance) chartInstance.destroy();
-            if (userHistory.length === 0) {
-                chartInstance = new Chart(ctx, { type: 'line', data: { labels: [''], datasets: [] }, options: { scales: { x: { display: false }, y: { display: false } } } }); return;
-            }
+                isSaving.value = true;
 
-            let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(56, 189, 248, 0.5)'); gradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+                let activeAddons = [];
+                config.addons.forEach(addon => { if (addon.active) activeAddons.push(addon.name); });
 
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Total (Rp)', data: costs, borderColor: '#38bdf8', backgroundColor: gradient, borderWidth: 2, pointBackgroundColor: '#fff', fill: true, tension: 0.4, yAxisID: 'y' },
-                        { label: 'Pemakaian (kWh)', data: usage, borderColor: '#818cf8', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, tension: 0.4, yAxisID: 'y1', fill: false }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false }, y1: { display: false } } }
+                const txId = 'ENG' + Date.now();
+                
+                const recordPayload = {
+                    action: 'insert',
+                    id: txId,
+                    timestamp: new Date().toISOString(),
+                    userName: activeUser.value,
+                    date: recordDate.value,
+                    meteranSekarang: current,
+                    meteranLalu: previous,
+                    pemakaian: computedUsage.value,
+                    totalBiaya: computedTotal.value,
+                    addons: activeAddons.join(", ")
+                };
+
+                historyData.value.push({ 
+                    id: txId, userName: activeUser.value, date: recordDate.value, meteranSekarang: current, 
+                    meteranLalu: previous, pemakaian: computedUsage.value, totalBiaya: computedTotal.value, addons: activeAddons.join(", ") 
+                });
+                localStorage.setItem('st_history', JSON.stringify(historyData.value));
+                
+                syncQueue.value.push(recordPayload);
+                localStorage.setItem('st_queue', JSON.stringify(syncQueue.value));
+
+                currentMeter.value = null;
+                
+                Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Data Tersimpan!', showConfirmButton: false, timer: 1500, background: '#0f172a', color: '#fff' });
+
+                processQueue();
+                setTimeout(() => { isSaving.value = false; }, 800);
+            };
+
+            const deleteRecord = (id) => {
+                Swal.fire({
+                    title: 'HAPUS DATA?', text: "Tagihan ini akan dihapus.",
+                    icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#334155', confirmButtonText: 'YA, HAPUS', background: '#0f172a', color: '#fff'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        historyData.value = historyData.value.filter(item => item.id !== id);
+                        localStorage.setItem('st_history', JSON.stringify(historyData.value));
+                        
+                        syncQueue.value.push({ action: 'delete', id: id });
+                        localStorage.setItem('st_queue', JSON.stringify(syncQueue.value));
+
+                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Terhapus!', showConfirmButton: false, timer: 1500, background: '#0f172a', color: '#fff' });
+                        processQueue();
+                    }
+                });
+            };
+
+            const clearHistory = () => {
+                Swal.fire({ title: 'HAPUS SEMUA DATA LOKAL?', text: `Data milik ${activeUser.value} akan dihapus dari HP ini.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#334155', confirmButtonText: 'YA, HAPUS', background: '#0f172a', color: '#fff' }).then((res) => {
+                    if (res.isConfirmed) {
+                        historyData.value = historyData.value.filter(tx => tx.userName !== activeUser.value);
+                        localStorage.setItem('st_history', JSON.stringify(historyData.value));
+                        Swal.fire({ title: 'Terhapus!', icon: 'success', background: '#0f172a', color: '#fff', timer: 1000, showConfirmButton: false });
+                    }
+                });
+            };
+
+            // ---- FITUR NATIVE SHARE KE WHATSAPP (FOTO + TEKS BERSAMAAN) ----
+            const shareBill = async () => {
+                if (filteredHistory.value.length === 0) {
+                    return Swal.fire({ icon: 'warning', title: 'Belum Ada Data', text: 'Simpan data meteran dulu sebelum dibagikan!', background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8' });
+                }
+
+                const latestRecord = filteredHistory.value[filteredHistory.value.length - 1];
+                const dateStr = formatDate(latestRecord.date);
+                
+                let details = "";
+                if (latestRecord.addons && latestRecord.addons.trim() !== "") {
+                    const addonsList = latestRecord.addons.split(", ");
+                    addonsList.forEach(addonName => {
+                        const matchedAddon = config.addons.find(a => a.name === addonName);
+                        if (matchedAddon) details += `- ${matchedAddon.name}: ${formatRupiah(matchedAddon.price)}\n`;
+                        else details += `- ${addonName}\n`;
+                    });
+                }
+
+                let waText = `*[ Laporan Listrik & Iuran ]*\n\n`;
+                waText += `Kamar/Penyewa : *${activeUser.value}*\n`;
+                waText += `Tanggal Laporan : ${dateStr}\n`;
+                waText += `--------------------------------\n\n`;
+                
+                waText += `*DATA METERAN:*\n`;
+                waText += `Angka Akhir : ${latestRecord.meteranSekarang}\n`;
+                waText += `Angka Awal  : ${latestRecord.meteranLalu}\n`;
+                waText += `Pemakaian   : *${latestRecord.pemakaian} kWh*\n\n`;
+
+                waText += `*RINCIAN BIAYA:*\n`;
+                waText += `- Listrik: ${formatRupiah(latestRecord.pemakaian * config.rate)}\n`;
+                waText += details;
+                
+                waText += `--------------------------------\n`;
+                waText += `*TOTAL BAYAR: ${formatRupiah(latestRecord.totalBiaya)}*\n`;
+                waText += `--------------------------------\n`;
+                waText += `\n~ Energy Tracker by Ardita`;
+
+                // FITUR WEB SHARE API NATIVE UNTUK MENGIRIM FILE + CAPTION BERSAMAAN
+                if (imageProofFile.value && navigator.canShare) {
+                    try {
+                        const fileShare = new File([imageProofFile.value], 'Meteran_Listrik.jpg', { type: 'image/jpeg' });
+                        const filesArray = [fileShare];
+                        
+                        if (navigator.canShare({ files: filesArray })) {
+                            await navigator.share({
+                                title: 'Tagihan Listrik',
+                                text: waText,
+                                files: filesArray
+                            });
+                            removeProof();
+                            return; 
+                        }
+                    } catch (err) {
+                        console.log("Membatalkan Share Native:", err);
+                        return;
+                    }
+                }
+
+                // FALLBACK JIKA BROWSER TIDAK MENDUKUNG SHARE FOTO
+                const phoneIbuKos = "6285855191520";
+                window.open(`https://wa.me/${phoneIbuKos}?text=${encodeURIComponent(waText)}`, '_blank');
+            };
+
+            // ---- SETTINGS & SYNC ----
+            const applySettings = () => {
+                config.webAppUrl = tempConfig.webAppUrl;
+                config.rate = tempConfig.rate;
+                if (filteredHistory.value.length === 0) {
+                    config.initialMeter = tempConfig.initialMeter;
+                    previousMeter.value = config.initialMeter;
+                }
+                saveConfig();
+                isSettingsOpen.value = false;
+                checkQueue();
+                Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Disimpan', showConfirmButton: false, timer: 1500, background: '#0f172a', color: '#fff' });
+            };
+
+            const closeSettings = () => {
+                tempConfig.webAppUrl = config.webAppUrl;
+                tempConfig.rate = config.rate;
+                isSettingsOpen.value = false;
+            };
+
+            const setStatus = (text, type) => {
+                syncStatusText.value = text;
+                if(type === 'sync') syncStatusClass.value = 'text-[10px] font-mono px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 animate-pulse';
+                else if(type === 'ok') syncStatusClass.value = 'text-[10px] font-mono px-2 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30';
+                else if(type === 'err') syncStatusClass.value = 'text-[10px] font-mono px-2 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30';
+                else syncStatusClass.value = 'text-[10px] font-mono px-2 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700';
+            };
+
+            const processQueue = async () => {
+                if (syncQueue.value.length === 0) return;
+                if (!config.webAppUrl) { setStatus('URL Kosong', 'err'); return; }
+                if (isSyncingProcess) return;
+
+                isSyncingProcess = true; setStatus('Menyinkronkan...', 'sync');
+                
+                const payloadToSend = syncQueue.value[0];
+
+                try {
+                    await fetch(config.webAppUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payloadToSend) });
+                    syncQueue.value.shift(); 
+                    localStorage.setItem('st_queue', JSON.stringify(syncQueue.value));
+                    
+                    if (syncQueue.value.length > 0) { isSyncingProcess = false; processQueue(); } 
+                    else { setStatus('Tersimpan Cloud', 'ok'); setTimeout(() => setStatus('Terkoneksi', 'wait'), 3000); }
+                } catch (e) { 
+                    setStatus('Menunggu Sinyal', 'err'); 
+                } finally { 
+                    isSyncingProcess = false; 
+                }
+            };
+
+            const checkQueue = () => {
+                if (syncQueue.value.length > 0) processQueue();
+                else if (config.webAppUrl) setStatus('Terkoneksi', 'wait');
+                else setStatus('Cloud Off', 'err');
+            };
+
+            const restoreData = async () => {
+                if (!config.webAppUrl) return Swal.fire({ icon: 'error', title: 'Oops', text: 'URL Google Sheet belum diset!', background: '#0f172a', color: '#fff' });
+                try {
+                    const response = await fetch(config.webAppUrl);
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        historyData.value = data;
+                        localStorage.setItem('st_history', JSON.stringify(historyData.value));
+                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Data Pulih!', showConfirmButton: false, timer: 2000, background: '#0f172a', color: '#fff' });
+                    } else { Swal.fire({ icon: 'info', title: 'Kosong', text: 'Tidak ada data di Google Sheet.', background: '#0f172a', color: '#fff' }); }
+                } catch (e) { Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menarik data dari Cloud.', background: '#0f172a', color: '#fff' }); } 
+                finally { isSettingsOpen.value = false; }
+            };
+
+            const formatRupiah = (number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+            const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
+
+            const renderChart = () => {
+                const canvas = document.getElementById('usageChart');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const hist = filteredHistory.value;
+                const labels = hist.map(d => new Date(d.date).toLocaleDateString('id-ID', { month: 'short' }));
+                const costs = hist.map(d => d.totalBiaya);
+                const usage = hist.map(d => d.pemakaian);
+
+                if (chartInstance) chartInstance.destroy();
+                if (hist.length === 0) {
+                    chartInstance = new Chart(ctx, { type: 'line', data: { labels: [''], datasets: [] }, options: { scales: { x: { display: false }, y: { display: false } } } }); return;
+                }
+
+                let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, 'rgba(56, 189, 248, 0.5)'); gradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Total (Rp)', data: costs, borderColor: '#38bdf8', backgroundColor: gradient, borderWidth: 2, pointBackgroundColor: '#fff', fill: true, tension: 0.4, yAxisID: 'y' },
+                            { label: 'Pemakaian (kWh)', data: usage, borderColor: '#818cf8', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, tension: 0.4, yAxisID: 'y1', fill: false }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false }, y1: { display: false } } }
+                });
+            };
+
+            onMounted(() => {
+                if (activeUser.value) initDashboard();
             });
+
+            return {
+                activeUser, loginInput, loginUser, logoutUser,
+                config, tempConfig, isSettingsOpen, applySettings, closeSettings,
+                currentMeter, previousMeter, recordDate, 
+                computedUsage, computedTotal, formatRupiah, formatDate,
+                allAddonsActive, toggleAllAddons, editAddonPrice, saveConfig,
+                saveRecord, isSaving, deleteRecord, clearHistory, shareBill,
+                filteredHistory, reversedHistory, syncStatusText, syncStatusClass, restoreData,
+                cameraInput, galleryInput, triggerCamera, triggerGallery, processImageWithAI, imageProofUrl, removeProof, ocrLoading
+            };
         }
-    </script>
+    }).mount('#app');
+</script>
 </body>
 </html>
