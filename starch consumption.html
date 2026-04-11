@@ -126,12 +126,12 @@
                 <div>
                     <label class="text-[8px] font-black text-slate-400 uppercase block mb-1">Grade</label>
                     <select v-model="form.grade" class="w-full rounded">
-                        <option value="CME 110GSM">CME 110GSM</option>
-                        <option value="CME 125GSM">CME 125GSM</option>
-                        <option value="CME 135GSM">CME 135GSM</option>
-                        <option value="CME 150GSM">CME 150GSM</option>
-                        <option value="CMF 125GSM">CMF 125GSM</option>
-                        <option value="CMF 150GSM">CMF 150GSM</option>
+                        <option value="CME 110">CME 110</option>
+                        <option value="CME 125">CME 125</option>
+                        <option value="CME 135">CME 135</option>
+                        <option value="CME 150">CME 150</option>
+                        <option value="CMF 125">CMF 125</option>
+                        <option value="CMF 150">CMF 150</option>
                     </select>
                 </div>
             </div>
@@ -328,7 +328,7 @@
                     brand: 'BSPL', 
                     date: '',
                     shift: '',
-                    grade: 'CME 125GSM',
+                    grade: 'CME 125', // Diubah menjadi tidak ada unsur "GSM" secara default
                     opDcs: 'Arief',
                     opFld: 'Agus',
                     speed: limits.speed.default,
@@ -351,7 +351,7 @@
 
                 const toast = reactive({ show: false, message: '' });
 
-                // Computed: Template WhatsApp sesuai request user
+                // Computed: Template WhatsApp sesuai layout
                 const previewText = computed(() => {
                     // Konversi YYYY-MM-DD ke format Hari, Tanggal Bulan Tahun
                     let dateStr = form.date;
@@ -370,7 +370,27 @@
                     else if (shiftName.includes('Morning')) shiftName = 'Morning Shift';
                     else if (shiftName.includes('Evening')) shiftName = 'Evening Shift';
 
-                    return `*Composition on Starch Preparation*\n\nDate : ${dateStr}\n\n*${shiftName}*\n- Grade ${form.grade}\n- Speed at Reel ${form.speed}/min\n\nStarch Brand          : ${form.brand}\nScrew Conveyor    : ${form.screw} %\nElevator                  : ${form.elevator} %\nWater                      : ${form.water} l/min\nEnzyme                   : ${form.enzyme} ml/min\n---------------------------\nSetpoint Solid Storage         :  ${form.storage} %\nSetpoint Solid F1 (Bottom). :  ${form.f1} %\nSetpoint Solid F2 (Top).       :  ${form.f2} %\n\n_Thank you_`;
+                    // Menghilangkan kata 'GSM' seandainya user menginput secara manual atau data cache memuatnya
+                    const cleanGrade = form.grade.replace(/GSM/gi, '').trim();
+
+                    // Format layout rapi
+                    return `*Composition on Starch Preparation*\n\n` +
+                           `Date : ${dateStr}\n` +
+                           `Opr DCS : ${form.opDcs}\n` +
+                           `Opr Field : ${form.opFld}\n\n` +
+                           `*${shiftName}*\n` +
+                           `- Grade ${cleanGrade}\n` +
+                           `- Speed at Reel ${form.speed} m/min\n\n` +
+                           `Starch Brand             : ${form.brand}\n` +
+                           `Screw Conveyor       : ${form.screw} %\n` +
+                           `Elevator                     : ${form.elevator} %\n` +
+                           `Water                         : ${form.water} l/min\n` +
+                           `Enzyme                      : ${form.enzyme} ml/min\n` +
+                           `---------------------------\n` +
+                           `Setpoint Solid Storage          : ${form.storage} %\n` +
+                           `Setpoint Solid F1 (Bottom) : ${form.f1} %\n` +
+                           `Setpoint Solid F2 (Top)       : ${form.f2} %\n\n` +
+                           `_Thank you_`;
                 });
 
                 const isWarning = (param) => {
