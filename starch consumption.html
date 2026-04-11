@@ -326,7 +326,7 @@
 
                 // State Utama Form
                 const form = reactive({
-                    brand: 'CME 125', // Default akan di-overwrite saat mounted
+                    brand: 'CME 125', 
                     date: '',
                     shift: '',
                     grade: 'CME 125',
@@ -355,7 +355,7 @@
                 // State UI
                 const toast = reactive({ show: false, message: '' });
 
-                // Computed: Menggantikan fungsi updateDisplay() yang lama
+                // Computed: Template WhatsApp
                 const previewText = computed(() => {
                     return `*[STARCH CONSUMPTION]*\n\n📅 ${form.date} | ${form.shift}\n👤 ${form.opDcs} [DCS] • ${form.opFld} [Fld]\n\n*📍 INFO*\n- Grade : ${form.grade}\n- Speed : ${form.speed} m/min\n- Brand : ${form.brand}\n\n*📋 DATA*\n- Screw/Elev : ${form.screw}% / ${form.elevator}%\n- Water/Enz : ${form.water} l/m / ${form.enzyme} ml/m\n\n*🎯 SETPOINT*\n- Storage: ${form.storage}%\n- F1(B)/F2(T): ${form.f1}% / ${form.f2}%\n\n_Thank you_`;
                 });
@@ -380,14 +380,7 @@
                     updateClock();
                     clockInterval = setInterval(updateClock, 1000);
 
-                    // Set Nilai Default Tanggal & Shift
-                    const now = new Date();
-                    form.date = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-                    const h = now.getHours();
-                    form.shift = h < 8 ? "Shift 1 (Night)" : h < 16 ? "Shift 2 (Morning)" : "Shift 3 (Evening)";
-                    form.brand = "BSPL JAWA (Lokal)"; // Set fallback awal
-                    
-                    // Muat Data dari LocalStorage
+                    // 1. Muat Data dari LocalStorage TERLEBIH DAHULU
                     const savedData = localStorage.getItem('vue_starch_form');
                     if (savedData) {
                         try {
@@ -395,6 +388,18 @@
                             Object.assign(form, parsed);
                         } catch (e) { console.error('Gagal memuat state'); }
                     }
+
+                    // 2. TIMPA kembali form.date dan form.shift dengan WAKTU SAAT INI
+                    // Hal ini memastikan tanggal/shift selalu update meski data lainnya di-cache
+                    const now = new Date();
+                    form.date = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+                    
+                    const h = now.getHours();
+                    form.shift = h < 8 ? "Shift 1 (Night)" : h < 16 ? "Shift 2 (Morning)" : "Shift 3 (Evening)";
+                    
+                    // Jika Anda ingin form Brand juga SELALU reset ke default saat direfresh, 
+                    // hilangkan tanda komentar pada baris di bawah ini:
+                    // form.brand = "BSPL JAWA (Lokal)"; 
                 });
 
                 onUnmounted(() => {
@@ -408,7 +413,7 @@
 
                 // --- LOGIC SLIDER & STEPPER ---
                 
-                // Tahan untuk buka kunci slider (Mencegah sentuhan tak sengaja)
+                // Tahan untuk buka kunci slider
                 const startTouch = (param, event) => {
                     if(event.target.tagName === 'BUTTON' || event.target.classList.contains('stepper-val-box')) return;
                     holdTimers[param] = setTimeout(() => {
@@ -423,7 +428,6 @@
                 };
 
                 const handleSlider = (param, event) => {
-                    // Jika tidak unlock, paksa kembalikan slider ke value vue.
                     if (!unlocked[param] && event.isTrusted) {
                         event.target.value = form[param];
                         return;
@@ -435,7 +439,6 @@
                 const stepVal = (param, dir) => {
                     const l = limits[param];
                     let val = parseFloat(form[param]) + (dir * l.step);
-                    // Handle float precision issue in JS
                     val = parseFloat(val.toFixed(2));
                     
                     if (val >= l.min && val <= l.max) {
@@ -487,7 +490,6 @@
                 };
 
                 const processAll = () => {
-                    // Salin ke Clipboard (metode yang lebih modern/fallback)
                     if (navigator.clipboard && window.isSecureContext) {
                         navigator.clipboard.writeText(previewText.value);
                     } else {
@@ -500,7 +502,6 @@
                     
                     showToast("Teks Disalin!");
                     
-                    // Buka link WhatsApp. Menggunakan wa.me agar lebih stabil (encode URL component handle enter dsb)
                     const waUrl = `https://wa.me/?text=${encodeURIComponent(previewText.value)}`;
                     setTimeout(() => window.open(waUrl, '_blank'), 500);
                 };
