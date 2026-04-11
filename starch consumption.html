@@ -101,11 +101,11 @@
                 <div>
                     <label class="text-[8px] font-black text-slate-400 uppercase block mb-1">Starch Brand</label>
                     <select v-model="form.brand" class="w-full !py-1.5 text-[11px] bg-slate-50 border-indigo-100 font-bold rounded">
-                        <option value="BSPL JAWA (Lokal)">BSPL JAWA (Lokal)</option>
-                        <option value="SPM (Lokal)">SPM (Lokal)</option>
-                        <option value="SB (SUNGAI BUDI) (Lokal)">SB (SUNGAI BUDI) (Lokal)</option>
-                        <option value="BMT (Lokal)">BMT (Lokal)</option>
-                        <option value="TCS (Import)">TCS (Import)</option>
+                        <option value="BSPL">BSPL</option>
+                        <option value="SPM">SPM</option>
+                        <option value="SB (SUNGAI BUDI)">SB (SUNGAI BUDI)</option>
+                        <option value="BMT">BMT</option>
+                        <option value="TCS">TCS</option>
                     </select>
                 </div>
                 <div>
@@ -126,12 +126,12 @@
                 <div>
                     <label class="text-[8px] font-black text-slate-400 uppercase block mb-1">Grade</label>
                     <select v-model="form.grade" class="w-full rounded">
-                        <option value="CME 110">CME 110</option>
-                        <option value="CME 125">CME 125</option>
-                        <option value="CME 135">CME 135</option>
-                        <option value="CME 150">CME 150</option>
-                        <option value="CMF 125">CMF 125</option>
-                        <option value="CMF 150">CMF 150</option>
+                        <option value="CME 110GSM">CME 110GSM</option>
+                        <option value="CME 125GSM">CME 125GSM</option>
+                        <option value="CME 135GSM">CME 135GSM</option>
+                        <option value="CME 150GSM">CME 150GSM</option>
+                        <option value="CMF 125GSM">CMF 125GSM</option>
+                        <option value="CMF 150GSM">CMF 150GSM</option>
                     </select>
                 </div>
             </div>
@@ -288,7 +288,7 @@
                 <summary class="list-none flex items-center justify-center gap-2 cursor-pointer text-slate-300 hover:text-indigo-400 transition-colors">
                     <span class="text-[8px] font-black uppercase tracking-[0.2em]">Preview Template WhatsApp</span>
                 </summary>
-                <div class="mt-3 p-4 bg-slate-900 rounded-2xl text-[10px] mono text-indigo-200/60 whitespace-pre-wrap leading-relaxed shadow-inner border border-slate-800 text-left h-auto max-h-64 overflow-y-auto">{{ previewText }}</div>
+                <div class="mt-3 p-4 bg-slate-900 rounded-2xl text-[10px] mono text-indigo-200/60 whitespace-pre-wrap leading-relaxed shadow-inner border border-slate-800 text-left h-auto max-h-72 overflow-y-auto">{{ previewText }}</div>
             </details>
         </div>
 
@@ -325,10 +325,10 @@
                 };
 
                 const form = reactive({
-                    brand: 'CME 125', 
+                    brand: 'BSPL', 
                     date: '',
                     shift: '',
-                    grade: 'CME 125',
+                    grade: 'CME 125GSM',
                     opDcs: 'Arief',
                     opFld: 'Agus',
                     speed: limits.speed.default,
@@ -351,34 +351,26 @@
 
                 const toast = reactive({ show: false, message: '' });
 
-                // Computed: Template WhatsApp yang baru (Lebih Formal & Terstruktur)
+                // Computed: Template WhatsApp sesuai request user
                 const previewText = computed(() => {
-                    return `*DAILY STARCH CONSUMPTION REPORT*
-*BM1 - PT Dayasa Aria Prima*
+                    // Konversi YYYY-MM-DD ke format Hari, Tanggal Bulan Tahun
+                    let dateStr = form.date;
+                    if (form.date) {
+                        const d = new Date(form.date);
+                        if (!isNaN(d.getTime())) {
+                            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                            dateStr = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+                        }
+                    }
 
-*INFORMASI UMUM*
-▪️ Tanggal: ${form.date}
-▪️ Shift: ${form.shift}
-▪️ Opr DCS: ${form.opDcs}
-▪️ Opr Field: ${form.opFld}
+                    // Menyesuaikan penamaan shift (Misal: Shift 1 (Night) -> Night Shift)
+                    let shiftName = form.shift;
+                    if (shiftName.includes('Night')) shiftName = 'Night Shift';
+                    else if (shiftName.includes('Morning')) shiftName = 'Morning Shift';
+                    else if (shiftName.includes('Evening')) shiftName = 'Evening Shift';
 
-*DETAIL PRODUKSI*
-▪️ Grade: ${form.grade}
-▪️ Starch Brand: ${form.brand}
-▪️ Speed Mesin: ${form.speed} m/min
-
-*PARAMETER KONSUMSI*
-▪️ Starch Screw: ${form.screw}%
-▪️ Elevator: ${form.elevator}%
-▪️ Water Flow: ${form.water} L/min
-▪️ Enzyme Flow: ${form.enzyme} ml/min
-
-*STATUS SETPOINT*
-▪️ Solid Storage: ${form.storage}%
-▪️ F1 (Bottom): ${form.f1}%
-▪️ F2 (Top): ${form.f2}%
-
-_Dilaporkan secara otomatis_`;
+                    return `*Composition on Starch Preparation*\n\nDate : ${dateStr}\n\n*${shiftName}*\n- Grade ${form.grade}\n- Speed at Reel ${form.speed}/min\n\nStarch Brand          : ${form.brand}\nScrew Conveyor    : ${form.screw} %\nElevator                  : ${form.elevator} %\nWater                      : ${form.water} l/min\nEnzyme                   : ${form.enzyme} ml/min\n---------------------------\nSetpoint Solid Storage         :  ${form.storage} %\nSetpoint Solid F1 (Bottom). :  ${form.f1} %\nSetpoint Solid F2 (Top).       :  ${form.f2} %\n\n_Thank you_`;
                 });
 
                 const isWarning = (param) => {
@@ -407,7 +399,7 @@ _Dilaporkan secara otomatis_`;
                         } catch (e) { console.error('Gagal memuat state'); }
                     }
 
-                    // 2. Timpa Tanggal
+                    // 2. Timpa Tanggal agar selalu real-time
                     const now = new Date();
                     form.date = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
                     const h = now.getHours();
