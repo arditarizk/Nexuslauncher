@@ -284,11 +284,11 @@
         </div>
 
         <div class="px-1 mb-6 text-center">
-            <details class="group">
+            <details class="group" open>
                 <summary class="list-none flex items-center justify-center gap-2 cursor-pointer text-slate-300 hover:text-indigo-400 transition-colors">
                     <span class="text-[8px] font-black uppercase tracking-[0.2em]">Preview Template WhatsApp</span>
                 </summary>
-                <div class="mt-3 p-4 bg-slate-900 rounded-2xl text-[10px] mono text-indigo-200/60 whitespace-pre-wrap leading-relaxed shadow-inner border border-slate-800 text-left h-48 overflow-y-auto">{{ previewText }}</div>
+                <div class="mt-3 p-4 bg-slate-900 rounded-2xl text-[10px] mono text-indigo-200/60 whitespace-pre-wrap leading-relaxed shadow-inner border border-slate-800 text-left h-auto max-h-64 overflow-y-auto">{{ previewText }}</div>
             </details>
         </div>
 
@@ -312,7 +312,7 @@
 
         createApp({
             setup() {
-                // Konfigurasi Parameter (Batasan dan Nilai Default)
+                // Konfigurasi Parameter
                 const limits = {
                     speed: { min: 600, max: 900, step: 10, default: 780 },
                     water: { min: 50, max: 150, step: 1.5, default: 100 },
@@ -324,7 +324,6 @@
                     f2: { min: 5, max: 20, step: 1, default: 13 }
                 };
 
-                // State Utama Form
                 const form = reactive({
                     brand: 'CME 125', 
                     date: '',
@@ -342,34 +341,53 @@
                     f2: limits.f2.default
                 });
 
-                // State Waktu Real-time
                 const currentDate = ref('');
                 const currentTime = ref('');
                 let clockInterval;
 
-                // State Interaksi Slider
                 const unlocked = reactive({ speed: false, water: false, screw: false, elevator: false, enzyme: false, storage: false, f1: false, f2: false });
                 const holdTimers = {};
                 let autoStepInterval;
 
-                // State UI
                 const toast = reactive({ show: false, message: '' });
 
-                // Computed: Template WhatsApp
+                // Computed: Template WhatsApp yang baru (Lebih Formal & Terstruktur)
                 const previewText = computed(() => {
-                    return `*[STARCH CONSUMPTION]*\n\n📅 ${form.date} | ${form.shift}\n👤 ${form.opDcs} [DCS] • ${form.opFld} [Fld]\n\n*📍 INFO*\n- Grade : ${form.grade}\n- Speed : ${form.speed} m/min\n- Brand : ${form.brand}\n\n*📋 DATA*\n- Screw/Elev : ${form.screw}% / ${form.elevator}%\n- Water/Enz : ${form.water} l/m / ${form.enzyme} ml/m\n\n*🎯 SETPOINT*\n- Storage: ${form.storage}%\n- F1(B)/F2(T): ${form.f1}% / ${form.f2}%\n\n_Thank you_`;
+                    return `*DAILY STARCH CONSUMPTION REPORT*
+*BM1 - PT Dayasa Aria Prima*
+
+*INFORMASI UMUM*
+▪️ Tanggal: ${form.date}
+▪️ Shift: ${form.shift}
+▪️ Opr DCS: ${form.opDcs}
+▪️ Opr Field: ${form.opFld}
+
+*DETAIL PRODUKSI*
+▪️ Grade: ${form.grade}
+▪️ Starch Brand: ${form.brand}
+▪️ Speed Mesin: ${form.speed} m/min
+
+*PARAMETER KONSUMSI*
+▪️ Starch Screw: ${form.screw}%
+▪️ Elevator: ${form.elevator}%
+▪️ Water Flow: ${form.water} L/min
+▪️ Enzyme Flow: ${form.enzyme} ml/min
+
+*STATUS SETPOINT*
+▪️ Solid Storage: ${form.storage}%
+▪️ F1 (Bottom): ${form.f1}%
+▪️ F2 (Top): ${form.f2}%
+
+_Dilaporkan secara otomatis_`;
                 });
 
-                // Menghitung status warning (>90% threshold)
                 const isWarning = (param) => {
                     const l = limits[param];
                     const percentage = (form[param] - l.min) / (l.max - l.min);
                     return percentage >= 0.90;
                 };
 
-                // Siklus Hidup Vue (Mounted)
                 onMounted(() => {
-                    // Update Jam
                     const updateClock = () => {
                         const now = new Date();
                         const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -380,7 +398,7 @@
                     updateClock();
                     clockInterval = setInterval(updateClock, 1000);
 
-                    // 1. Muat Data dari LocalStorage TERLEBIH DAHULU
+                    // 1. Muat Data
                     const savedData = localStorage.getItem('vue_starch_form');
                     if (savedData) {
                         try {
@@ -389,31 +407,21 @@
                         } catch (e) { console.error('Gagal memuat state'); }
                     }
 
-                    // 2. TIMPA kembali form.date dan form.shift dengan WAKTU SAAT INI
-                    // Hal ini memastikan tanggal/shift selalu update meski data lainnya di-cache
+                    // 2. Timpa Tanggal
                     const now = new Date();
                     form.date = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-                    
                     const h = now.getHours();
                     form.shift = h < 8 ? "Shift 1 (Night)" : h < 16 ? "Shift 2 (Morning)" : "Shift 3 (Evening)";
-                    
-                    // Jika Anda ingin form Brand juga SELALU reset ke default saat direfresh, 
-                    // hilangkan tanda komentar pada baris di bawah ini:
-                    // form.brand = "BSPL JAWA (Lokal)"; 
                 });
 
                 onUnmounted(() => {
                     clearInterval(clockInterval);
                 });
 
-                // Simpan ke LocalStorage tiap ada perubahan di object form
                 watch(form, (newVal) => {
                     localStorage.setItem('vue_starch_form', JSON.stringify(newVal));
                 }, { deep: true });
-
-                // --- LOGIC SLIDER & STEPPER ---
                 
-                // Tahan untuk buka kunci slider
                 const startTouch = (param, event) => {
                     if(event.target.tagName === 'BUTTON' || event.target.classList.contains('stepper-val-box')) return;
                     holdTimers[param] = setTimeout(() => {
@@ -435,7 +443,6 @@
                     form[param] = parseFloat(event.target.value);
                 };
 
-                // Increment/Decrement Stepper
                 const stepVal = (param, dir) => {
                     const l = limits[param];
                     let val = parseFloat(form[param]) + (dir * l.step);
@@ -459,7 +466,6 @@
                     clearInterval(autoStepInterval);
                 };
 
-                // Edit Manual via Prompt
                 const manualEdit = (param, name) => {
                     const l = limits[param];
                     let newVal = prompt(`Set nilai manual untuk ${name}\n(Batas: ${l.min} - ${l.max} | Kelipatan: ${l.step})`, form[param]);
@@ -473,7 +479,6 @@
                     }
                 };
 
-                // Reset Semua Slider
                 const confirmReset = () => {
                     if(confirm("Yakin ingin mengembalikan semua angka ke nilai awal?")) {
                         Object.keys(limits).forEach(key => {
@@ -482,7 +487,6 @@
                     }
                 };
 
-                // Fitur Submit & Toast
                 const showToast = (msg) => {
                     toast.message = msg;
                     toast.show = true;
