@@ -64,9 +64,6 @@
         .status-offline { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
         .status-local { background-color: #94a3b8; box-shadow: none; }
 
-        .loading-spinner { border: 2px solid #f3f3f3; border-top: 2px solid #ffffff; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         /* Stepper UI */
         .stepper-btn { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: #64748b; border-radius: 4px; font-weight: 800; font-size: 14px; transition: all 0.1s; user-select: none; -webkit-touch-callout: none; }
         .stepper-btn:active { background-color: #cbd5e1; transform: scale(0.9); color: #0f172a;}
@@ -313,11 +310,10 @@
         let initialValues = {};
         let autoStepInterval;
 
-        // --- TEROBOSAN: HOLD TO SCROLL & SMART STEP ---
+        // --- HOLD TO SCROLL & SMART STEP ---
         function stepVal(id, dir) {
             const input = document.getElementById(id);
             if(!input) return;
-            // Ambil step dari HTML (10 untuk speed, 5 untuk water, dll)
             let step = parseFloat(input.getAttribute('step')) || 1;
             let val = parseFloat(input.value) + (dir * step);
             
@@ -328,12 +324,11 @@
             }
         }
 
-        // Tahan tombol untuk menggulung angka otomatis dengan cepat
         function startAutoStep(id, dir) {
-            stepVal(id, dir); // Klik pertama
+            stepVal(id, dir); 
             autoStepInterval = setTimeout(() => {
-                autoStepInterval = setInterval(() => stepVal(id, dir), 100); // Ngebut tiap 100ms
-            }, 350); // Jeda sebelum ngebut
+                autoStepInterval = setInterval(() => stepVal(id, dir), 100); 
+            }, 350); 
         }
 
         function stopAutoStep() {
@@ -344,12 +339,15 @@
         function manualEdit(id, name) {
             const input = document.getElementById(id);
             let newVal = prompt(`Set nilai manual untuk ${name}\n(Batas: ${input.min} - ${input.max} | Kelipatan: ${input.step})`, input.value);
+            
             if (newVal !== null && newVal.trim() !== "") {
                 newVal = parseFloat(newVal);
-                if (!isNaN(newVal) && newVal >= input.min && newVal <= input.max) {
+                if (!Number.isNaN(newVal) && newVal >= input.min && newVal <= input.max) {
                     input.value = newVal;
                     input.dispatchEvent(new Event('input'));
-                } else alert(`Masukkan angka antara ${input.min} - ${input.max}`);
+                } else {
+                    alert(`Gagal: Masukkan angka valid antara ${input.min} - ${input.max}`);
+                }
             }
         }
 
@@ -386,7 +384,6 @@
                 const id = input.id.replace('Input', '').replace('solid', '').toLowerCase();
                 const display = document.getElementById('val-' + id);
                 
-                // TEROBOSAN: Warning Warna jika batas mendekati maksimal (>= 90%)
                 if(display) {
                     display.innerText = input.value;
                     let percentage = (input.value - input.min) / (input.max - input.min);
@@ -400,8 +397,10 @@
         });
 
         window.onload = function() {
-            const now = new Date(); document.getElementById('dateInput').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-            const h = now.getHours(); document.getElementById('shiftInput').value = h < 8 ? "Shift 1 (Night)" : h < 16 ? "Shift 2 (Morning)" : "Shift 3 (Evening)";
+            const now = new Date(); 
+            document.getElementById('dateInput').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const h = now.getHours(); 
+            document.getElementById('shiftInput').value = h < 8 ? "Shift 1 (Night)" : h < 16 ? "Shift 2 (Morning)" : "Shift 3 (Evening)";
             
             ['opDcs', 'opFld', 'gradeInput', 'brandInput'].forEach(id => {
                 const s = localStorage.getItem('starch_' + id); if (s) document.getElementById(id).value = s;
@@ -411,7 +410,6 @@
                 const el = document.getElementById(p === 'f1' || p === 'f2' || p === 'storage' ? 'solid' + p.toUpperCase() : p + 'Input');
                 if (s !== null && el) {
                     el.value = s;
-                    // Trigger warning check on load
                     el.dispatchEvent(new Event('input'));
                 }
             });
@@ -422,18 +420,48 @@
             el.addEventListener('input', () => { localStorage.setItem('starch_' + el.id, el.value); updateDisplay(); });
         });
 
-        function updateDisplay() {
+        // --- MESSAGE BUILDER ---
+        const getMessageText = () => {
             const d = (id) => document.getElementById(id).value;
-            document.getElementById('previewArea').innerText = `*[STARCH CONSUMPTION]*\n\n📅 ${d('dateInput')} | ${d('shiftInput')}\n👤 ${d('opDcs')} [DCS] • ${d('opFld')} [Fld]\n\n*📍 INFO*\n- Grade : ${d('gradeInput')}\n- Speed : ${d('speedInput')} m/min\n- Brand : ${d('brandInput')}\n\n*📋 DATA*\n- Screw/Elev : ${d('screwInput')}% / ${d('elevatorInput')}%\n- Water/Enz : ${d('waterInput')} l/m / ${d('enzymeInput')} ml/m\n\n*🎯 SETPOINT*\n- Storage: ${d('solidStorage')}%\n- F1(B)/F2(T): ${d('solidF1')}% / ${d('solidF2')}%\n\n_Thank you_`;
+            return `*[STARCH CONSUMPTION]*\n\n📅 ${d('dateInput')} | ${d('shiftInput')}\n👤 ${d('opDcs')} [DCS] • ${d('opFld')} [Fld]\n\n*📍 INFO*\n- Grade : ${d('gradeInput')}\n- Speed : ${d('speedInput')} m/min\n- Brand : ${d('brandInput')}\n\n*📋 DATA*\n- Screw/Elev : ${d('screwInput')}% / ${d('elevatorInput')}%\n- Water/Enz : ${d('waterInput')} l/m / ${d('enzymeInput')} ml/m\n\n*🎯 SETPOINT*\n- Storage: ${d('solidStorage')}%\n- F1(B)/F2(T): ${d('solidF1')}% / ${d('solidF2')}%\n\n_Thank you_`;
+        };
+
+        function updateDisplay() {
+            document.getElementById('previewArea').innerText = getMessageText();
         }
 
+        // --- EXPORT & SHARE LOGIC ---
         function processAll() {
-            const el = document.createElement('textarea'); el.value = document.getElementById('previewArea').innerText;
-            document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
-            const t = document.getElementById('toast'); document.getElementById('toastMsg').innerText = "Teks Disalin!";
-            t.classList.add('opacity-100'); setTimeout(() => t.classList.remove('opacity-100'), 2000);
-            setTimeout(() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(document.getElementById('previewArea').innerText)}`, '_blank'), 500);
+            const textToShare = getMessageText();
+            
+            // 1. Eksekusi URL WA langsung sebelum Promise berjalan untuk cegah popup blocker
+            const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(textToShare)}`;
+            window.open(waUrl, '_blank');
 
+            // 2. Tampilkan Toast UI
+            const t = document.getElementById('toast'); 
+            document.getElementById('toastMsg').innerText = "WA Dibuka & Teks Disalin!";
+            t.classList.add('opacity-100'); 
+            setTimeout(() => t.classList.remove('opacity-100'), 2000);
+
+            // 3. Proses Copy menggunakan Navigator API modern dengan Fallback
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToShare).catch(err => console.error('Gagal menyalin:', err));
+            } else {
+                // Fallback untuk HTTP lokal tanpa SSL
+                const el = document.createElement('textarea'); 
+                el.value = textToShare;
+                el.style.position = 'fixed';
+                el.style.opacity = '0';
+                document.body.appendChild(el); 
+                el.select(); 
+                try {
+                    document.execCommand('copy'); 
+                } catch (err) {
+                    console.error('Fallback salin gagal:', err);
+                }
+                document.body.removeChild(el);
+            }
         }
     </script>
 </body>
