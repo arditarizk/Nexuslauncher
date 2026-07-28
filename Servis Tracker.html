@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ant Motor Garage - Pro System</title>
+    <title>My Ride - Ultra Edition</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
@@ -18,7 +18,7 @@
                     fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
                     colors: { 
                         carbon: '#09090b', surface: '#171717', surfaceLight: '#262626',
-                        antOrange: '#ea580c', antRed: '#dc2626', silver: '#9ca3af', success: '#10b981', warning: '#f59e0b'
+                        antOrange: '#ea580c', antRed: '#dc2626', success: '#10b981', warning: '#f59e0b'
                     }
                 }
             }
@@ -27,547 +27,578 @@
 
     <style>
         body { background-color: #09090b; color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
-        .pro-card { background: #171717; border: 1px solid #262626; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .pro-input { background: #09090b; border: 1px solid #333; color: #fff; border-radius: 6px; transition: all 0.2s; }
-        .pro-input:focus { border-color: #ea580c; outline: none; box-shadow: 0 0 0 1px #ea580c; }
+        .glass-card { background: #171717; border: 1px solid #262626; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .bar-transition { transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-        ::-webkit-scrollbar { width: 0px; }
-        input[type="checkbox"]:checked + div { background-color: #ea580c; border-color: #ea580c; }
-        input[type="checkbox"]:checked + div > i { opacity: 1; }
-        #loginOverlay { backdrop-filter: blur(10px); }
-        /* Styling Datalist agar lebih bersih */
-        datalist { background-color: #171717; color: white; }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .tab-active { background-color: #ea580c; color: white; border-color: #ea580c; }
+        .tab-inactive { background-color: #171717; color: #9ca3af; border-color: #262626; }
     </style>
 </head>
-<body class="min-h-screen pb-24 font-sans selection:bg-antOrange selection:text-white">
+<body class="min-h-screen p-4 font-sans selection:bg-antOrange selection:text-white pb-24">
 
-    <!-- LOGIN SCREEN -->
-    <div id="loginOverlay" class="fixed inset-0 z-50 bg-carbon/95 flex flex-col items-center justify-center px-4 transition-opacity duration-500">
-        <div class="text-center mb-8">
-            <div class="w-24 h-24 mx-auto bg-gradient-to-tr from-antRed to-antOrange rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(234,88,12,0.4)]">
-                <span class="text-5xl animate-pulse">🐜</span>
+    <div class="max-w-md mx-auto space-y-5 pt-2">
+        
+        <!-- Header & Top Action Buttons -->
+        <div class="flex justify-between items-center mb-2">
+            <div>
+                <h1 class="text-3xl font-black text-white tracking-tighter uppercase italic">Motor<span class="text-antOrange">Ku</span></h1>
+                <p class="text-[9px] text-gray-500 font-mono tracking-widest">ULTRA MAINTENANCE TRACKER</p>
             </div>
-            <h1 class="text-3xl font-black text-white mt-4 tracking-tighter uppercase italic">Ant Motor <span class="text-antOrange">Garage</span></h1>
-            <p class="text-silver text-xs font-mono tracking-widest mt-1">PROFESSIONAL WORKSHOP SYSTEM</p>
-        </div>
-        <div class="w-full max-w-sm pro-card p-6">
-            <label class="text-[10px] text-gray-500 font-bold uppercase block mb-2 text-center">AUTHORIZED LOGIN</label>
-            <input type="text" id="mechanicNameInput" placeholder="NAMA MEKANIK..." class="pro-input w-full px-4 py-4 text-center font-bold text-lg mb-4 uppercase text-antOrange placeholder:text-gray-800" onkeypress="if(event.key==='Enter') loginMechanic()">
-            <button onclick="loginMechanic()" class="w-full py-4 bg-gradient-to-r from-antOrange to-antRed hover:from-antRed hover:to-antOrange text-white font-black uppercase tracking-widest rounded-lg transition-all shadow-lg active:scale-95">
-                AKSES SISTEM
-            </button>
-        </div>
-    </div>
-
-    <!-- Header -->
-    <header class="fixed top-0 w-full z-40 bg-carbon/90 backdrop-blur-md border-b border-surfaceLight shadow-md hidden" id="mainHeader">
-        <div class="max-w-xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <span class="text-2xl drop-shadow-[0_0_10px_rgba(234,88,12,0.8)]">🐜</span>
-                <div class="leading-none">
-                    <h1 class="font-black text-lg tracking-tight uppercase text-white italic">Ant Motor</h1>
-                    <p class="text-[9px] text-antOrange font-mono tracking-widest">GARAGE SYSTEM</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <span id="syncStatus" class="text-[10px] font-mono px-2 py-1 rounded bg-surface border border-gray-700 text-gray-400">OFFLINE</span>
-                <button onclick="openSettings()" class="text-gray-400 hover:text-white transition-colors bg-surfaceLight p-1.5 rounded"><i class="bi bi-sliders text-lg"></i></button>
-            </div>
-        </div>
-    </header>
-
-    <main class="max-w-xl mx-auto px-4 pt-24 space-y-6 hidden" id="mainContent">
-
-        <!-- Data Kendaraan Pelanggan -->
-        <div class="pro-card p-5 border-t-4 border-t-antOrange shadow-[0_0_20px_rgba(234,88,12,0.1)]">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center"><i class="bi bi-person-vcard text-antOrange mr-2"></i> Data Pelanggan</h3>
-                <span class="text-[9px] text-gray-500 font-mono uppercase">Excel Autocomplete Mode</span>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-1">Plat Nomor / Nopol</label>
-                    <input list="plateOptions" type="text" id="inputPlate" placeholder="N 1234 ABC" class="pro-input w-full px-3 py-3 text-sm font-mono uppercase font-bold text-white" oninput="refreshVehicleData()" autocomplete="off">
-                    <datalist id="plateOptions"></datalist>
-                </div>
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-1">Nama Pemilik</label>
-                    <input list="customerOptions" type="text" id="inputCustomer" placeholder="Nama Pelanggan" class="pro-input w-full px-3 py-3 text-sm capitalize font-bold" autocomplete="off">
-                    <datalist id="customerOptions"></datalist>
-                </div>
-            </div>
-        </div>
-
-        <!-- Odometer & Diagnostics -->
-        <div class="pro-card p-5 relative overflow-hidden">
-            <div class="absolute right-0 top-0 opacity-5 pointer-events-none"><i class="bi bi-speedometer text-[150px]"></i></div>
-            
-            <label class="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">Odometer Kendaraan (KM)</label>
-            <div class="relative">
-                <input type="number" id="kmNow" placeholder="00000" class="w-full bg-carbon border-2 border-surfaceLight rounded-lg text-4xl font-mono font-black text-white px-4 py-4 focus:border-antOrange outline-none transition-colors" oninput="runDiagnostics()">
-                <div class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 font-black text-xl">KM</div>
-            </div>
-
-            <div class="mt-6 pt-5 border-t border-surfaceLight">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xs text-silver font-bold uppercase tracking-widest flex items-center gap-2">
-                        <i class="bi bi-cpu text-antOrange"></i> Diagnostik Mesin 
-                        <span id="diagnosticTarget" class="text-[9px] bg-carbon px-2 py-0.5 rounded text-antOrange border border-antOrange/30 hidden"></span>
-                    </h3>
-                </div>
-                <div id="diagnosticContainer" class="space-y-4">
-                    <p class="text-xs text-gray-500 font-mono text-center py-4 border border-dashed border-gray-700 rounded bg-carbon/50 uppercase italic">Scan plat & km untuk riwayat part</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Form Record Service -->
-        <div class="pro-card p-5">
-            <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center"><i class="bi bi-tools text-antOrange mr-2"></i> Tindakan Servis</h3>
-            
-            <div class="mb-4">
-                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-2">Pilih Pekerjaan / Part</label>
-                <div class="grid grid-cols-2 gap-2" id="partsChecklist"></div>
-                
-                <label class="relative flex items-center p-3 mt-2 rounded-lg border border-surfaceLight bg-surface hover:border-gray-500 cursor-pointer transition-colors group">
-                    <input type="checkbox" id="checkOther" value="Lainnya" class="hidden peer" onchange="toggleCustomPart(this)">
-                    <div class="w-4 h-4 rounded border border-gray-500 mr-3 flex items-center justify-center transition-colors">
-                        <i class="bi bi-check text-white text-xs opacity-0 transition-opacity"></i>
-                    </div>
-                    <span class="text-xs text-gray-300 font-medium select-none">Lainnya (Pekerjaan Kustom)</span>
-                </label>
-                <input type="text" id="inputCustomPart" placeholder="Contoh: Turun Mesin, Ganti Ban..." class="pro-input w-full px-3 py-2 text-xs mt-2 hidden">
-            </div>
-
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-1">Tanggal</label>
-                    <input type="date" id="inputDate" class="pro-input w-full px-3 py-3 text-sm">
-                </div>
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-1">Biaya Total (Rp)</label>
-                    <input type="tel" id="inputCost" placeholder="0" class="pro-input w-full px-3 py-3 text-sm font-mono text-antOrange font-bold" oninput="formatInputRupiah(this)">
-                </div>
-            </div>
-
-            <div class="mb-5">
-                <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Catatan Mekanik</label>
-                <input type="text" id="inputNote" placeholder="Keterangan tambahan bengkel..." class="pro-input w-full px-3 py-3 text-sm">
-            </div>
-
-            <button id="btnSave" onclick="saveRecord()" class="w-full py-4 bg-antOrange hover:bg-antRed text-white font-black uppercase tracking-widest rounded-lg transition-colors active:scale-95 disabled:opacity-50 flex justify-center items-center gap-2 shadow-[0_0_15px_rgba(234,88,12,0.4)]">
-                <i class="bi bi-floppy-fill"></i> SIMPAN INVOICE
-            </button>
-        </div>
-
-        <!-- History -->
-        <div class="pro-card p-5">
-            <div class="flex justify-between items-center mb-4 border-b border-surfaceLight pb-2">
-                <div class="flex flex-col">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                        <i class="bi bi-receipt text-gray-400"></i> 
-                        <span id="historyTitle">LOG RIWAYAT BENGKEL</span>
-                    </h3>
-                    <p id="historySubtitle" class="text-[9px] text-gray-500 font-mono">Menampilkan aktivitas bengkel terbaru</p>
-                </div>
-                <button onclick="shareWhatsApp()" class="text-[10px] bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded font-bold flex items-center gap-1 shadow-lg">
-                    <i class="bi bi-whatsapp"></i> STRUK WA
+            <div class="flex gap-2">
+                <button onclick="openFakeBreakdown()" class="p-2.5 bg-yellow-600/20 text-yellow-500 border border-yellow-600/40 rounded-xl hover:bg-yellow-600/30 transition-all text-xs font-bold flex items-center gap-1" title="Tombol Alasan Mogok">
+                    <i class="bi bi-cup-hot-fill"></i> Alasan
+                </button>
+                <button onclick="document.getElementById('settingsModal').classList.remove('hidden')" class="p-2.5 bg-surfaceLight border border-gray-700 text-white rounded-xl hover:bg-surface transition-all text-xs">
+                    <i class="bi bi-gear-fill"></i>
                 </button>
             </div>
-            
-            <div id="historyList" class="space-y-4"></div>
         </div>
 
-    </main>
+        <!-- Category Tabs -->
+        <div class="grid grid-cols-2 gap-2">
+            <button onclick="switchTab('matic')" id="tab-matic" class="py-2.5 rounded-xl font-black text-sm uppercase tracking-widest border transition-colors tab-active">
+                <i class="bi bi-scooter mr-1"></i> Matic
+            </button>
+            <button onclick="switchTab('moped')" id="tab-moped" class="py-2.5 rounded-xl font-black text-sm uppercase tracking-widest border transition-colors tab-inactive">
+                <i class="bi bi-bicycle mr-1"></i> Moped
+            </button>
+        </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeSettings()"></div>
-        <div class="absolute bottom-0 w-full bg-surface border-t border-antOrange p-6 animate-slide-up max-h-[85vh] overflow-y-auto rounded-t-2xl">
+        <!-- Odometer Utama -->
+        <div class="glass-card p-5 border-t-4 border-t-antOrange relative overflow-hidden">
+            <label class="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-2">Update Odometer (KM)</label>
+            <div class="relative">
+                <input type="number" id="currentKM" placeholder="0" class="w-full bg-carbon border-2 border-surfaceLight rounded-xl text-5xl font-mono font-black text-white px-4 py-3 focus:border-antOrange outline-none transition-colors text-center" oninput="saveKM()">
+                <div class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 font-black text-lg">KM</div>
+            </div>
+        </div>
+
+        <!-- PANIC BUTTON: MENDING JUAL MOTOR (Conditional) -->
+        <div id="panicBtnContainer" class="hidden">
+            <button onclick="triggerPanicSell()" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.5)] animate-pulse flex items-center justify-center gap-2">
+                <i class="bi bi-fire text-lg"></i> 3+ Part Rusak! Mending Jual Motor <i class="bi bi-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- Savage Mekanik Ngomel Banner (Conditional) -->
+        <div id="roastContainer" class="hidden glass-card p-4 border-l-4 border-red-500 bg-red-950/20">
+            <div class="flex items-start gap-3">
+                <span class="text-2xl"></span>
+                <div>
+                    <h4 class="text-xs font-black text-red-500 uppercase tracking-wider">Mekanik Ngomel:</h4>
+                    <p id="roastText" class="text-xs text-gray-200 mt-0.5 italic font-medium"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insight & Saran Section -->
+        <div id="insightContainer" class="hidden glass-card p-4 border-l-4">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-2">
+                <i class="bi bi-robot text-antOrange"></i> AI Diagnostik
+            </h3>
+            <ul id="insightList" class="space-y-1.5 text-xs"></ul>
+        </div>
+
+        <!-- Estimasi Dompet (Budget Planner) -->
+        <div id="budgetCard" class="hidden glass-card p-4 bg-gradient-to-r from-surface to-carbon">
+            <div class="flex justify-between items-center">
+                <div>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase block">Estimasi Dompet Servis</span>
+                    <h3 id="budgetValue" class="text-lg font-black text-antOrange font-mono">Rp 0</h3>
+                </div>
+                <button onclick="openPriceEditor()" class="text-[10px] bg-carbon border border-gray-700 px-2.5 py-1.5 rounded-lg text-gray-300 hover:text-white font-bold">
+                    <i class="bi bi-pencil mr-1"></i>Edit Harga
+                </button>
+            </div>
+        </div>
+
+        <!-- Fuel Consumption Quick Tracker Widget -->
+        <div class="glass-card p-4">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <i class="bi bi-fuel-pump-fill text-green-500"></i> Konsumsi BBM
+                </h3>
+                <span id="avgFuelConsumption" class="text-xs font-mono font-bold text-green-400">0 KM/L</span>
+            </div>
+            <div class="flex gap-2">
+                <input type="number" id="fuelLiterInput" step="0.1" placeholder="Liter (misal 3.5)" class="flex-1 bg-carbon border border-surfaceLight rounded-lg text-xs font-mono px-3 py-2 text-white outline-none focus:border-green-500">
+                <button onclick="logFuel()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">
+                    Catat Isi BBM
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Status Parts -->
+        <div>
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider mb-3 px-1 flex items-center">
+                <i class="bi bi-activity text-antOrange mr-2"></i> Status Komponen
+            </h2>
+            <div id="partsContainer" class="space-y-3"></div>
+        </div>
+
+    </div>
+
+    <!-- FAKE ENGINE BREAKDOWN OVERLAY (Excuses Generator) -->
+    <div id="fakeBreakdownOverlay" class="hidden fixed inset-0 bg-black z-[9999] p-6 flex flex-col justify-between font-mono text-green-500 overflow-y-auto">
+        <div class="space-y-4">
+            <div class="border-b border-green-800 pb-3 flex justify-between items-center">
+                <span class="text-xs font-bold uppercase tracking-widest text-red-500"> ENGINE CRITICAL OVERHEAT</span>
+                <span class="text-[10px] text-gray-500" id="fakeTime">10:42 PM</span>
+            </div>
+            <div class="text-center py-6">
+                <i class="bi bi-exclamation-triangle-fill text-6xl text-red-600 animate-pulse"></i>
+                <h2 class="text-xl font-black text-white mt-3 uppercase tracking-wider">MOTOR MOGOK TOTAL</h2>
+                <p class="text-xs text-red-400 mt-1">Suhu Mesin > 130�C / Komponen Aus</p>
+            </div>
+            <div class="bg-gray-900/80 p-4 rounded-xl border border-gray-800 text-xs space-y-2 text-gray-300">
+                <p><b>Vehicle:</b> <span id="fakeVehicleName">Matic System</span></p>
+                <p><b>Odometer:</b> <span id="fakeOdoKM">0</span> KM</p>
+                <p><b>Diagnostic Code:</b> ERR_CVT_BELT_FAILURE_0x88</p>
+                <p><b>Status:</b> Menunggu Mobil Towing / Bengkel Terdekat...</p>
+            </div>
+            <p class="text-[10px] text-gray-600 italic text-center">Screen-capture halaman ini untuk dikirimkan ke atasan / dosen / pacar.</p>
+        </div>
+        <button onclick="document.getElementById('fakeBreakdownOverlay').classList.add('hidden')" class="w-full py-3 bg-red-950 text-red-400 border border-red-800 rounded-xl font-bold text-xs uppercase tracking-widest mt-6">
+            Tutup Tampilan Mogok
+        </button>
+    </div>
+
+    <!-- Settings & Sync Modal -->
+    <div id="settingsModal" class="fixed inset-0 z-50 hidden flex flex-col justify-end">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="document.getElementById('settingsModal').classList.add('hidden')"></div>
+        <div class="relative bg-surface border-t border-antOrange rounded-t-2xl p-6 max-h-[85vh] overflow-y-auto w-full max-w-md mx-auto shadow-2xl">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-black text-white uppercase tracking-tight"><i class="bi bi-database text-antOrange mr-2"></i> Integrasi Server</h3>
-                <button onclick="closeSettings()" class="text-gray-400 hover:text-white bg-surfaceLight p-2 rounded-full"><i class="bi bi-x-lg"></i></button>
+                <h3 class="text-lg font-black text-white uppercase tracking-tight"><i class="bi bi-sliders text-antOrange mr-2"></i> Pengaturan</h3>
+                <button onclick="document.getElementById('settingsModal').classList.add('hidden')" class="text-gray-400 p-2"><i class="bi bi-x-lg"></i></button>
             </div>
 
-            <div class="space-y-5">
+            <div class="space-y-6">
+                <!-- Log Riwayat Servis -->
                 <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-1">Google Sheets API URL</label>
-                    <div class="relative">
-                        <input type="url" id="settingUrl" placeholder="https://script.google.com/macros/s/..." class="pro-input w-full px-3 py-3 text-sm font-mono" onfocus="showUrlHistory()" autocomplete="off">
-                        <div id="urlHistoryDropdown" class="hidden absolute top-full left-0 w-full mt-1 bg-carbon border border-surfaceLight rounded-lg shadow-xl overflow-hidden z-50"></div>
-                    </div>
-                </div>
-                
-                <div class="bg-carbon p-3 rounded-lg border border-surfaceLight flex justify-between items-center">
-                    <span id="settingsMechanic" class="text-xs text-antOrange font-bold uppercase">MEKANIK: GUEST</span>
-                    <button onclick="logoutMechanic()" class="text-[10px] bg-antRed text-white px-3 py-1 rounded uppercase font-bold">Logout</button>
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-2">Riwayat penggantian Part</label>
+                    <button onclick="viewServiceHistory()" class="w-full bg-carbon border border-gray-700 text-white py-3 rounded-xl text-xs font-bold hover:border-antOrange transition-colors flex items-center justify-center gap-2">
+                        <i class="bi bi-clock-history"></i> Lihat Log Riwayat Transaksi
+                    </button>
                 </div>
 
-                <button onclick="saveSettings()" class="w-full py-4 bg-white text-black font-black uppercase tracking-widest rounded-lg">SIMPAN PENGATURAN</button>
+                <!-- Backup & Restore -->
+                <div>
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-2">Backup & Restore (JSON)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="backupData()" class="bg-carbon border border-gray-700 text-white py-3 rounded-xl text-xs font-bold hover:border-antOrange transition-colors"><i class="bi bi-download mr-1"></i> Backup</button>
+                        <button onclick="document.getElementById('fileInput').click()" class="bg-carbon border border-gray-700 text-white py-3 rounded-xl text-xs font-bold hover:border-antOrange transition-colors"><i class="bi bi-upload mr-1"></i> Restore</button>
+                        <input type="file" id="fileInput" accept=".json" class="hidden" onchange="restoreData(event)">
+                    </div>
+                </div>
+
+                <!-- Cloud Sync -->
+                <div>
+                    <label class="text-[10px] text-gray-500 font-bold uppercase block mb-2">Cloud Sync (Apps Script)</label>
+                    <input type="url" id="syncUrl" placeholder="https://script.google.com/macros/s/..." class="w-full bg-carbon border border-gray-700 rounded-xl text-xs font-mono text-white px-3 py-3 outline-none focus:border-antOrange mb-2">
+                    <button onclick="syncToCloud()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-colors shadow-lg flex items-center justify-center gap-2">
+                        <i class="bi bi-cloud-arrow-up-fill"></i> Sinkronisasi Cloud
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        const PARTS = [
-            { id: 'tuneup', name: 'Tune Up / Servis Ringan', interval: 4000, icon: 'bi-wrench-adjustable' },
-            { id: 'oli_mesin', name: 'Oli Mesin', interval: 2500, icon: 'bi-droplet-fill' },
-            { id: 'oli_gardan', name: 'Oli Gardan (3:1)', interval: 7500, icon: 'bi-gear-wide-connected' },
-            { id: 'busi', name: 'Busi', interval: 8000, icon: 'bi-lightning-charge-fill' },
-            { id: 'kampas_rem', name: 'Kampas Rem', interval: 12000, icon: 'bi-record-circle' },
-            { id: 'filter_udara', name: 'Filter Udara', interval: 15000, icon: 'bi-wind' },
-            { id: 'vbelt', name: 'V-Belt / Rantai', interval: 24000, icon: 'bi-nut-fill' },
-            { id: 'coolant', name: 'Air Radiator', interval: 12000, icon: 'bi-thermometer-half' },
-            { id: 'injector', name: 'Bersih Injector', interval: 10000, icon: 'bi-funnel-fill' }
+        // Configuration
+        const CONFIG = {
+            matic: [
+                { id: 'oli_mesin', name: 'Oli Mesin', interval: 2500, icon: 'bi-droplet-fill', defaultPrice: 55000 },
+                { id: 'oli_gardan', name: 'Oli Gardan', interval: 8000, icon: 'bi-gear-wide-connected', defaultPrice: 25000 },
+                { id: 'vbelt', name: 'V-Belt (CVT)', interval: 24000, icon: 'bi-nut-fill', defaultPrice: 160000 },
+                { id: 'kampas_rem', name: 'Kampas Rem', interval: 12000, icon: 'bi-record-circle', defaultPrice: 45000 },
+                { id: 'busi', name: 'Busi', interval: 8000, icon: 'bi-lightning-charge-fill', defaultPrice: 30000 },
+                { id: 'filter_udara', name: 'Filter Udara', interval: 15000, icon: 'bi-wind', defaultPrice: 50000 }
+            ],
+            moped: [
+                { id: 'oli_mesin', name: 'Oli Mesin', interval: 2500, icon: 'bi-droplet-fill', defaultPrice: 55000 },
+                { id: 'rantai', name: 'Rantai & Gir', interval: 15000, icon: 'bi-link-45deg', defaultPrice: 180000 },
+                { id: 'kampas_rem', name: 'Kampas Rem', interval: 12000, icon: 'bi-record-circle', defaultPrice: 45000 },
+                { id: 'busi', name: 'Busi', interval: 8000, icon: 'bi-lightning-charge-fill', defaultPrice: 30000 },
+                { id: 'filter_udara', name: 'Filter Udara', interval: 15000, icon: 'bi-wind', defaultPrice: 50000 }
+            ]
+        };
+
+        const ROAST_MESSAGES = [
+            "Oli mesin udah berubah jadi aspal hitam, yakin masih mau dipaksa gas?!",
+            "V-Belt udah retak-retak. Nyawa cuma satu bang, putus di hutan beda cerita!",
+            "Ini motor apa museum purba? Komponennya udah aus peninggalan sejarah semua!",
+            "Rem udah tipis gitu mau ngedrift di pintu akhirat atau gimana bang?!"
         ];
 
-        let activeMechanic = localStorage.getItem('ant_mechanic') || '';
-        let appConfig = JSON.parse(localStorage.getItem('ant_config')) || { webAppUrl: '', baselines: {} };
-        let historyData = JSON.parse(localStorage.getItem('ant_history')) || [];
-        let syncQueue = JSON.parse(localStorage.getItem('ant_queue')) || [];
-        let urlHistory = JSON.parse(localStorage.getItem('ant_url_history')) || [];
-        let isSyncing = false;
+        // Database Schema with Fail-safes
+        let myData = JSON.parse(localStorage.getItem('my_moto_ultra')) || {
+            activeTab: 'matic',
+            syncUrl: '',
+            fuelLogs: [],
+            serviceLogs: [],
+            prices: {
+                oli_mesin: 55000, oli_gardan: 25000, vbelt: 160000, rantai: 180000, kampas_rem: 45000, busi: 30000, filter_udara: 50000
+            },
+            matic: { currentKM: 0, baselines: {} },
+            moped: { currentKM: 0, baselines: {} }
+        };
 
         document.addEventListener('DOMContentLoaded', () => {
-            if (!activeMechanic) { document.getElementById('loginOverlay').classList.remove('hidden'); } 
-            else { initApp(); }
-            
-            document.addEventListener('click', (e) => {
-                const input = document.getElementById('settingUrl');
-                const dropdown = document.getElementById('urlHistoryDropdown');
-                if (e.target !== input && !dropdown.contains(e.target)) dropdown.classList.add('hidden');
-            });
+            document.getElementById('syncUrl').value = myData.syncUrl || '';
+            switchTab(myData.activeTab);
         });
 
-        function cleanPlate(plate) {
-            return plate ? plate.toString().replace(/[^A-Z0-9]/gi, '').toUpperCase() : '';
-        }
-
-        function loginMechanic() {
-            const name = document.getElementById('mechanicNameInput').value.trim().toUpperCase();
-            if(!name) return alertErr('Masukkan Nama Mekanik!');
-            activeMechanic = name;
-            localStorage.setItem('ant_mechanic', activeMechanic);
-            document.getElementById('loginOverlay').style.opacity = '0';
-            setTimeout(() => { document.getElementById('loginOverlay').classList.add('hidden'); initApp(); }, 500);
-        }
-
-        function logoutMechanic() {
-            closeSettings(); activeMechanic = ''; localStorage.removeItem('ant_mechanic');
-            location.reload();
-        }
-
-        function initApp() {
-            document.getElementById('mainHeader').classList.remove('hidden');
-            document.getElementById('mainContent').classList.remove('hidden');
-            document.getElementById('settingsMechanic').innerText = `MEKANIK: ${activeMechanic}`;
-            document.getElementById('inputDate').valueAsDate = new Date();
+        function switchTab(tab) {
+            myData.activeTab = tab;
+            localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
             
-            updateInputSuggestions(); // Update Datalists
-            renderPartsChecklist();
-            refreshVehicleData(); 
-            checkQueue();
+            document.getElementById('tab-matic').className = `py-2.5 rounded-xl font-black text-sm uppercase tracking-widest border transition-colors ${tab === 'matic' ? 'tab-active' : 'tab-inactive'}`;
+            document.getElementById('tab-moped').className = `py-2.5 rounded-xl font-black text-sm uppercase tracking-widest border transition-colors ${tab === 'moped' ? 'tab-active' : 'tab-inactive'}`;
+            
+            document.getElementById('currentKM').value = myData[tab].currentKM || '';
+            renderDashboard();
         }
 
-        // --- SISTEM SUGGESTION (EXCEL STYLE) ---
-        function updateInputSuggestions() {
-            // 1. Suggestion Plat Nomor
-            const plates = [...new Set(historyData.map(tx => tx.plate.toUpperCase()))];
-            const plateDatalist = document.getElementById('plateOptions');
-            plateDatalist.innerHTML = plates.map(p => `<option value="${p}">`).join('');
-
-            // 2. Suggestion Nama Pelanggan
-            const customers = [...new Set(historyData.map(tx => tx.customer))].filter(c => c && c !== 'Guest');
-            const customerDatalist = document.getElementById('customerOptions');
-            customerDatalist.innerHTML = customers.map(c => `<option value="${c}">`).join('');
+        function saveKM() {
+            const val = parseInt(document.getElementById('currentKM').value) || 0;
+            myData[myData.activeTab].currentKM = val;
+            localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
+            renderDashboard();
         }
 
-        function renderPartsChecklist() {
-            const container = document.getElementById('partsChecklist');
+        function renderDashboard() {
+            const tab = myData.activeTab;
+            const km = myData[tab].currentKM;
+            const parts = CONFIG[tab];
+            const container = document.getElementById('partsContainer');
+            
+            const insightBox = document.getElementById('insightContainer');
+            const insightList = document.getElementById('insightList');
+            const roastBox = document.getElementById('roastContainer');
+            const panicBox = document.getElementById('panicBtnContainer');
+            const budgetCard = document.getElementById('budgetCard');
+            const budgetValEl = document.getElementById('budgetValue');
+
+            let urgents = [];
+            let warnings = [];
+            let totalEstimatedBudget = 0;
+            let severeOverdue = false;
+
             container.innerHTML = '';
-            PARTS.forEach(part => {
-                container.innerHTML += `
-                    <label class="relative flex items-center p-3 rounded-lg border border-surfaceLight bg-surface hover:border-gray-500 cursor-pointer transition-colors group">
-                        <input type="checkbox" id="part_${part.id}" value="${part.name}" class="hidden peer">
-                        <div class="w-4 h-4 rounded border border-gray-500 mr-3 flex items-center justify-center transition-colors"><i class="bi bi-check text-white text-xs opacity-0 transition-opacity"></i></div>
-                        <i class="bi ${part.icon} text-gray-500 mr-2 group-hover:text-silver transition-colors text-sm"></i>
-                        <span class="text-[11px] text-gray-300 font-medium select-none leading-tight">${part.name}</span>
-                    </label>
-                `;
-            });
-        }
+            calculateFuelConsumption();
 
-        function toggleCustomPart(checkbox) {
-            const input = document.getElementById('inputCustomPart');
-            if (checkbox.checked) { input.classList.remove('hidden'); input.focus(); } 
-            else { input.classList.add('hidden'); input.value = ''; }
-        }
+            if(km === 0) {
+                insightBox.classList.add('hidden');
+                roastBox.classList.add('hidden');
+                panicBox.classList.add('hidden');
+                budgetCard.classList.add('hidden');
+                container.innerHTML = `<div class="glass-card p-6 text-center text-gray-500 text-xs font-mono uppercase">Masukkan KM Odometer untuk melihat analisa</div>`;
+                return;
+            }
 
-        function refreshVehicleData() {
-            const rawPlate = document.getElementById('inputPlate').value.trim().toUpperCase();
-            const normPlate = cleanPlate(rawPlate);
+            parts.forEach(part => {
+                const lastKM = myData[tab].baselines[part.id] !== undefined ? myData[tab].baselines[part.id] : 0;
+                const nextKM = lastKM + part.interval;
+                const kmUsed = km - lastKM;
+                let progress = (kmUsed / part.interval) * 100;
+                let visualProgress = Math.min(Math.max(progress, 0), 100); 
 
-            // AUTO-FILL NAMA PELANGGAN JIKA PLAT COCOK
-            if (normPlate.length >= 3) {
-                const vehicleHistory = historyData.filter(tx => cleanPlate(tx.plate) === normPlate);
-                if (vehicleHistory.length > 0) {
-                    const lastTx = vehicleHistory.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-                    if (lastTx.customer && lastTx.customer !== 'Guest') {
-                        document.getElementById('inputCustomer').value = lastTx.customer;
-                    }
+                let barColor = 'bg-success';
+                let statusText = 'AMAN';
+                let statusColor = 'text-success';
+                let cardStyle = '';
+
+                const price = myData.prices[part.id] || part.defaultPrice;
+
+                if (kmUsed < 0) {
+                    barColor = 'bg-gray-600'; statusText = 'KM ERROR'; statusColor = 'text-gray-500';
+                } else if (km >= nextKM) {
+                    barColor = 'bg-antRed animate-pulse'; statusText = 'GANTI SEKARANG'; statusColor = 'text-antRed font-black';
+                    cardStyle = 'border border-antRed/50 shadow-[0_0_15px_rgba(220,38,38,0.2)]';
+                    urgents.push(part.name);
+                    totalEstimatedBudget += price;
+                    if(km - nextKM > 300) severeOverdue = true; // Lewat 300 KM memicu Mekanik Ngomel
+                } else if (km >= nextKM - 500) {
+                    barColor = 'bg-warning'; statusText = 'PERSIAPAN'; statusColor = 'text-warning';
+                    warnings.push(part.name);
+                    totalEstimatedBudget += price;
                 }
-            }
-
-            runDiagnostics();
-            renderHistoryList();
-        }
-
-        function runDiagnostics() {
-            const rawPlate = document.getElementById('inputPlate').value;
-            const normPlate = cleanPlate(rawPlate);
-            const currentKM = parseInt(document.getElementById('kmNow').value) || 0;
-            const container = document.getElementById('diagnosticContainer');
-            const badge = document.getElementById('diagnosticTarget');
-            
-            container.innerHTML = '';
-
-            if (normPlate.length < 3 || currentKM === 0) {
-                badge.classList.add('hidden');
-                container.innerHTML = `<p class="text-xs text-gray-500 font-mono text-center py-4 border border-dashed border-gray-700 rounded bg-carbon/50 uppercase italic tracking-tighter">Masukkan Plat & KM untuk Scan</p>`;
-                return;
-            }
-
-            badge.classList.remove('hidden');
-            badge.innerText = rawPlate.toUpperCase();
-
-            const vehicleHistory = historyData.filter(tx => cleanPlate(tx.plate) === normPlate);
-            
-            PARTS.forEach(part => {
-                const reversedHistory = [...vehicleHistory].reverse();
-                const lastService = reversedHistory.find(tx => tx.parts.includes(part.name));
-                
-                const baselineKey = `${normPlate}_${part.id}`;
-                appConfig.baselines = appConfig.baselines || {};
-                
-                let lastKM = lastService ? lastService.km : (appConfig.baselines[baselineKey] || 0);
-                let hasHistory = !!lastService;
-                let nextKM = lastKM + part.interval;
-                let used = currentKM - lastKM;
-                let progress = Math.min((used / part.interval) * 100, 100);
-
-                let color = 'bg-success'; 
-                let badgeTxt = 'SAFE';
-                
-                if (used < 0) { color = 'bg-gray-600'; badgeTxt = 'ERR: KM'; } 
-                else if (currentKM >= nextKM) { color = 'bg-antRed animate-pulse'; badgeTxt = 'REPLACE NOW'; } 
-                else if (currentKM >= nextKM - 500) { color = 'bg-warning'; badgeTxt = 'SOON'; }
-
-                let editBtn = !hasHistory ? `<button onclick="setBaseline('${normPlate}', '${part.id}', '${part.name}')" class="ml-2 text-gray-600 hover:text-white transition-colors" title="Set KM Awal Part Ini"><i class="bi bi-pencil-square text-[9px]"></i></button>` : '';
 
                 container.innerHTML += `
-                    <div class="bg-surface border border-surfaceLight p-3 rounded-lg">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-[11px] text-white font-bold uppercase tracking-wider"><i class="bi ${part.icon} mr-1"></i> ${part.name}</span>
-                            <span class="text-[10px] font-black ${badgeTxt === 'SAFE' ? 'text-success' : (badgeTxt === 'SOON' ? 'text-warning' : 'text-antRed')}">${badgeTxt}</span>
-                        </div>
-                        <div class="flex justify-between items-center text-[10px] font-mono text-gray-500 mb-1.5">
-                            <span>Terakhir: ${lastKM.toLocaleString('id-ID')} ${editBtn}</span>
-                            <span>Batas: <span class="text-white font-bold">${nextKM.toLocaleString('id-ID')}</span></span>
-                        </div>
-                        <div class="h-1 w-full bg-carbon rounded-full overflow-hidden">
-                            <div class="h-full ${color} bar-transition" style="width: ${Math.max(0, progress)}%"></div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        async function setBaseline(normPlate, partId, partName) {
-            const { value: kmInput } = await Swal.fire({
-                title: 'SET RECORD AWAL',
-                html: `<span class="text-xs text-gray-400">Kapan terakhir ganti <b>${partName}</b> untuk motor ini?</span>`,
-                input: 'number', inputPlaceholder: 'Masukkan KM Speedometer...',
-                background: '#171717', color: '#fff', confirmButtonColor: '#ea580c'
-            });
-            if (kmInput) {
-                appConfig.baselines[`${normPlate}_${partId}`] = parseInt(kmInput);
-                localStorage.setItem('ant_config', JSON.stringify(appConfig));
-                runDiagnostics();
-            }
-        }
-
-        function renderHistoryList() {
-            const container = document.getElementById('historyList');
-            const rawPlate = document.getElementById('inputPlate').value.trim();
-            const normPlate = cleanPlate(rawPlate);
-            const titleEl = document.getElementById('historyTitle');
-            const subtitleEl = document.getElementById('historySubtitle');
-            
-            container.innerHTML = '';
-            
-            let displayData = historyData;
-            if (normPlate.length >= 2) {
-                displayData = historyData.filter(tx => cleanPlate(tx.plate) === normPlate);
-                titleEl.innerText = "RIWAYAT KENDARAAN";
-                subtitleEl.innerText = `Catatan servis untuk ${rawPlate.toUpperCase()}`;
-            } else {
-                titleEl.innerText = "LOG RIWAYAT BENGKEL";
-                subtitleEl.innerText = "Aktivitas terbaru semua pelanggan";
-            }
-
-            if (displayData.length === 0) {
-                container.innerHTML = `<p class="text-xs text-gray-500 font-mono text-center py-8 uppercase border border-dashed border-gray-800 rounded-xl">Data Tidak Ditemukan</p>`;
-                return;
-            }
-
-            const sorted = [...displayData].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 15);
-            
-            sorted.forEach(tx => {
-                const tgl = new Date(tx.date).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
-                container.innerHTML += `
-                    <div class="p-4 bg-carbon border border-surfaceLight rounded-xl hover:border-gray-600 transition-colors">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <h4 class="text-sm font-black text-white uppercase italic">${tx.plate}</h4>
-                                <p class="text-[10px] text-gray-500 font-mono uppercase">${tgl} • ${tx.km.toLocaleString('id-ID')} KM • ${tx.customer}</p>
+                    <div class="glass-card p-4 relative overflow-hidden ${cardStyle}">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center gap-2">
+                                <i class="bi ${part.icon} text-gray-400 text-lg"></i>
+                                <div>
+                                    <h3 class="text-sm font-bold text-white tracking-wide">${part.name}</h3>
+                                    <p class="text-[10px] text-gray-500 font-mono">Batas: ${nextKM.toLocaleString('id-ID')} KM � Est: Rp ${price.toLocaleString('id-ID')}</p>
+                                </div>
                             </div>
                             <div class="text-right">
-                                <span class="text-sm font-black text-success">${tx.cost > 0 ? formatRupiah(tx.cost) : 'FREE'}</span>
-                                <button onclick="deleteRecord('${tx.id}')" class="block ml-auto mt-1 text-gray-700 hover:text-antRed"><i class="bi bi-trash text-sm"></i></button>
+                                <span class="text-[10px] uppercase tracking-widest ${statusColor} block">${statusText}</span>
+                                <div class="flex gap-1 mt-1 justify-end">
+                                    <button onclick="editBaseline('${part.id}', '${part.name}', ${lastKM})" class="text-[10px] bg-carbon border border-gray-700 text-gray-400 hover:text-white px-2 py-1 rounded" title="Edit KM"><i class="bi bi-pencil-fill"></i></button>
+                                    <button onclick="triggerGachaReset('${part.id}', '${part.name}')" class="text-[10px] bg-carbon border border-gray-700 text-white hover:bg-surfaceLight px-2 py-1 rounded uppercase font-bold">Reset</button>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex flex-wrap gap-1 mt-2">
-                            ${tx.parts.split(", ").map(p => `<span class="px-2 py-0.5 bg-surface border border-gray-800 rounded text-[9px] font-bold text-silver uppercase">${p}</span>`).join('')}
+                        <div class="h-1.5 w-full bg-carbon rounded-full overflow-hidden">
+                            <div class="h-full ${barColor} bar-transition" style="width: ${visualProgress}%"></div>
                         </div>
-                        ${tx.note ? `<p class="text-[9px] text-yellow-600 font-mono mt-2 uppercase italic leading-tight border-t border-gray-800 pt-2">> ${tx.note}</p>` : ''}
+                        <div class="flex justify-between mt-1.5 px-1">
+                            <span class="text-[9px] text-gray-500 font-mono">Dipakai: ${kmUsed.toLocaleString('id-ID')} KM</span>
+                            <span class="text-[9px] text-gray-500 font-mono">Sisa: ${Math.max(0, nextKM - km).toLocaleString('id-ID')} KM</span>
+                        </div>
                     </div>
                 `;
             });
-        }
 
-        function saveRecord() {
-            const currentKM = parseInt(document.getElementById('kmNow').value);
-            const customer = document.getElementById('inputCustomer').value.trim() || 'Guest';
-            const plate = document.getElementById('inputPlate').value.trim().toUpperCase();
-            const date = document.getElementById('inputDate').value;
-            const cost = parseInt(document.getElementById('inputCost').value.replace(/\./g, '')) || 0;
-            const note = document.getElementById('inputNote').value.trim();
-
-            let selectedParts = [];
-            PARTS.forEach(p => { if(document.getElementById(`part_${p.id}`).checked) selectedParts.push(p.name); });
-            if (document.getElementById('checkOther').checked && document.getElementById('inputCustomPart').value) {
-                selectedParts.push(document.getElementById('inputCustomPart').value.trim());
+            // Budget Planner Display
+            if(totalEstimatedBudget > 0) {
+                budgetCard.classList.remove('hidden');
+                budgetValEl.innerText = `Rp ${totalEstimatedBudget.toLocaleString('id-ID')}`;
+            } else {
+                budgetCard.classList.add('hidden');
             }
 
-            if (!plate || !currentKM || selectedParts.length === 0) return alertErr('Lengkapi Plat, KM, dan minimal 1 Part!');
+            // Savage Mekanik Ngomel Trigger
+            if(severeOverdue) {
+                roastBox.classList.remove('hidden');
+                document.getElementById('roastText').innerText = ROAST_MESSAGES[Math.floor(Math.random() * ROAST_MESSAGES.length)];
+            } else {
+                roastBox.classList.add('hidden');
+            }
 
-            const btn = document.getElementById('btnSave');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="bi bi-gear animate-spin"></i> MEMPROSES...';
+            // Panic Button Trigger (3+ Urgent Parts)
+            if(urgents.length >= 3) {
+                panicBox.classList.remove('hidden');
+            } else {
+                panicBox.classList.add('hidden');
+            }
 
-            const txId = 'ANT' + Date.now(); 
-            const newRecord = {
-                id: txId, date: date, mechanic: activeMechanic, customer: customer,
-                plate: plate, km: currentKM, parts: selectedParts.join(", "),
-                cost: cost, note: note, timestamp: new Date().toISOString()
-            };
+            // AI Insights
+            insightBox.classList.remove('hidden');
+            insightBox.classList.remove('border-antRed', 'border-warning', 'border-success');
+            insightList.innerHTML = '';
 
-            historyData.push(newRecord);
-            localStorage.setItem('ant_history', JSON.stringify(historyData));
-            syncQueue.push({ action: 'insert', data: newRecord });
-            localStorage.setItem('ant_queue', JSON.stringify(syncQueue));
-
-            // Reset UI
-            document.getElementById('inputCost').value = '';
-            document.getElementById('inputNote').value = '';
-            document.getElementById('inputCustomPart').classList.add('hidden');
-            document.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
-            
-            updateInputSuggestions(); 
-            refreshVehicleData(); 
-            processQueue(); 
-
-            setTimeout(() => { btn.disabled = false; btn.innerHTML = '<i class="bi bi-floppy-fill"></i> SIMPAN INVOICE'; }, 1000);
+            if (urgents.length > 0) {
+                insightBox.classList.add('border-antRed');
+                insightList.innerHTML += `<li class="text-antRed font-bold"><span class="mr-1"></span> URGENT: Segera ganti <b>${urgents.join(', ')}</b>!</li>`;
+            }
+            if (warnings.length > 0) {
+                if(urgents.length === 0) insightBox.classList.add('border-warning');
+                insightList.innerHTML += `<li class="text-warning"><span class="mr-1"></span> PERSIAPAN: Siapkan budget untuk <b>${warnings.join(', ')}</b>.</li>`;
+            }
+            if (urgents.length === 0 && warnings.length === 0) {
+                insightBox.classList.add('border-success');
+                insightList.innerHTML += `<li class="text-success"><span class="mr-1"></span> Motor dalam kondisi prima, siap gasspol!</li>`;
+            }
         }
 
-        function deleteRecord(id) {
+        // --- GACHA MEKANIK RESET SYSTEM ---
+        function triggerGachaReset(partId, partName) {
+            const tab = myData.activeTab;
+            const km = myData[tab].currentKM;
+            if(km <= 0) return;
+
+            const rand = Math.random();
+            let rank = 'R';
+            let title = 'Servis Standar Tokcer!';
+            let desc = 'Part berhasil diganti tanpa kendala.';
+            let icon = '';
+
+            if(rand > 0.9) {
+                rank = 'SSR ';
+                title = 'Mekanik Sepuh Mode Sempurna!';
+                desc = 'Setelan karbu/CVT presisi banget, motor mendadak ngacir berasa baru!';
+                icon = '';
+            } else if(rand > 0.6) {
+                rank = 'SR ';
+                title = 'Dapet Bonus Cuci Motor!';
+                desc = 'Ganti part lancar dan dapet diskon koin mekanik.';
+                icon = '';
+            } else if(rand < 0.2) {
+                rank = 'ZONK ';
+                title = 'Baut Sisa Satu!';
+                desc = 'Part terpasang, tapi ada sisa baut misterius di lantai. Pasrah aja lah ya...';
+                icon = '';
+            }
+
             Swal.fire({
-                title: 'HAPUS INVOICE?', text: "Data akan dihapus permanen.",
-                icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', background: '#171717', color: '#fff'
+                title: `GACHA SERVIS: ${rank}`,
+                html: `<div class="text-center"><span class="text-5xl block my-2">${icon}</span><b>${title}</b><p class="text-xs text-gray-400 mt-2">${desc}</p></div>`,
+                background: '#171717', color: '#fff', confirmButtonColor: '#ea580c', confirmButtonText: 'Terima Nasib & Simpan'
+            }).then(() => {
+                myData[tab].baselines[partId] = km;
+                // Add to history log
+                myData.serviceLogs.unshift({
+                    date: new Date().toLocaleDateString('id-ID'),
+                    tab: tab.toUpperCase(),
+                    partName: partName,
+                    km: km,
+                    gacha: rank
+                });
+                localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
+                renderDashboard();
+            });
+        }
+
+        // --- LOG BENSIN (FUEL TRACKER) ---
+        function logFuel() {
+            const km = myData[myData.activeTab].currentKM;
+            const liters = parseFloat(document.getElementById('fuelLiterInput').value);
+            if(!km || !liters) return alert('Masukkan KM Odometer dan Jumlah Liter Bensin!');
+
+            myData.fuelLogs.unshift({ km: km, liters: liters, date: new Date().toLocaleDateString('id-ID') });
+            if(myData.fuelLogs.length > 10) myData.fuelLogs.pop(); // Max 10 logs
+            localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
+            
+            document.getElementById('fuelLiterInput').value = '';
+            renderDashboard();
+            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'BBM Tercatat!', showConfirmButton: false, timer: 1500, background: '#171717', color: '#fff' });
+        }
+
+        function calculateFuelConsumption() {
+            const logs = myData.fuelLogs;
+            const el = document.getElementById('avgFuelConsumption');
+            if(logs.length < 2) {
+                el.innerText = 'Butuh 2x Log';
+                return;
+            }
+            const kmDiff = logs[0].km - logs[1].km;
+            const liters = logs[0].liters;
+            if(kmDiff > 0 && liters > 0) {
+                const avg = (kmDiff / liters).toFixed(1);
+                el.innerText = `~${avg} KM/L`;
+            }
+        }
+
+        // --- FAKE BREAKDOWN & PANIC ---
+        function openFakeBreakdown() {
+            document.getElementById('fakeOdoKM').innerText = myData[myData.activeTab].currentKM;
+            document.getElementById('fakeVehicleName').innerText = myData.activeTab.toUpperCase() + " SYSTEM";
+            document.getElementById('fakeTime').innerText = new Date().toLocaleTimeString('id-ID');
+            document.getElementById('fakeBreakdownOverlay').classList.remove('hidden');
+        }
+
+        function triggerPanicSell() {
+            Swal.fire({
+                title: 'MENDING JUAL MOTOR?',
+                text: 'Biaya servis udah numpuk parah. Mau cek harga sepeda ontel atau motor baru?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                confirmButtonText: 'Buka OLX / Marketplace',
+                cancelButtonText: 'Bertahan Hidup',
+                background: '#171717', color: '#fff'
             }).then((res) => {
-                if (res.isConfirmed) {
-                    historyData = historyData.filter(i => i.id !== id);
-                    localStorage.setItem('ant_history', JSON.stringify(historyData));
-                    syncQueue.push({ action: 'delete', id: id });
-                    localStorage.setItem('ant_queue', JSON.stringify(syncQueue));
-                    updateInputSuggestions();
-                    refreshVehicleData(); 
-                    processQueue();
+                if(res.isConfirmed) {
+                    window.open('https://www.olx.co.id/motor-bekas_c200', '_blank');
                 }
             });
         }
 
-        function shareWhatsApp() {
-            const rawPlate = document.getElementById('inputPlate').value;
-            const normPlate = cleanPlate(rawPlate);
-            let vehicleHistory = historyData;
-            if (normPlate) vehicleHistory = historyData.filter(tx => cleanPlate(tx.plate) === normPlate);
-            if (vehicleHistory.length === 0) return alertErr("Belum ada data untuk motor ini.");
-            
-            const sortedData = [...vehicleHistory].sort((a,b)=>new Date(a.date)-new Date(b.date));
-            const latest = sortedData[sortedData.length - 1];
-            const dateStr = new Date(latest.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'});
-            const text = `🏢 *ANT MOTOR GARAGE*\n_Professional Workshop System_\n==========================\n📅 Tanggal : ${dateStr}\n👤 Pelanggan: ${latest.customer}\n🏍️ Plat No : *${latest.plate}*\n📟 Odometer : ${latest.km.toLocaleString('id-ID')} KM\n\n🛠️ *RINCIAN SERVIS:*\n${latest.parts.split(", ").map(p => `• ${p}`).join("\n")}\n📝 *Catatan:* ${latest.note || '-'}\n\n💵 *TOTAL BIAYA: ${formatRupiah(latest.cost)}*\n==========================\n_Terima kasih telah mempercayakan kendaraan Anda di Ant Motor Garage._ 🐜🏁`;
-            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        // --- EDIT HARGA PART ---
+        async function openPriceEditor() {
+            let html = '<div class="space-y-2 text-left">';
+            CONFIG[myData.activeTab].forEach(p => {
+                const currentPrice = myData.prices[p.id] || p.defaultPrice;
+                html += `<div class="flex justify-between items-center text-xs"><span>${p.name}:</span> <input type="number" id="price_${p.id}" value="${currentPrice}" class="w-28 bg-carbon border border-gray-700 p-1 text-right text-white font-mono rounded"></div>`;
+            });
+            html += '</div>';
+
+            const { isConfirmed } = await Swal.fire({
+                title: 'EDIT HARGA PART',
+                html: html,
+                showCancelButton: true,
+                confirmButtonColor: '#ea580c',
+                background: '#171717', color: '#fff',
+                preConfirm: () => {
+                    CONFIG[myData.activeTab].forEach(p => {
+                        const val = parseInt(document.getElementById(`price_${p.id}`).value);
+                        if(val) myData.prices[p.id] = val;
+                    });
+                }
+            });
+
+            if(isConfirmed) {
+                localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
+                renderDashboard();
+            }
         }
 
-        function setSyncStatus(text, state) {
-            const el = document.getElementById('syncStatus');
-            el.innerHTML = text;
-            if(state === 'sync') el.className = 'text-[9px] font-mono px-2 py-1 rounded bg-yellow-900/30 text-yellow-500 animate-pulse border border-yellow-700';
-            if(state === 'ok') el.className = 'text-[9px] font-mono px-2 py-1 rounded bg-green-900/30 text-green-500 border border-green-700';
-            if(state === 'err') el.className = 'text-[9px] font-mono px-2 py-1 rounded bg-red-900/30 text-red-500 border border-red-700';
+        function viewServiceHistory() {
+            let html = '<div class="space-y-2 text-left max-h-60 overflow-y-auto text-xs font-mono">';
+            if(myData.serviceLogs.length === 0) html += '<p class="text-gray-500 text-center py-4">Belum ada riwayat servis.</p>';
+            myData.serviceLogs.forEach(l => {
+                html += `<div class="p-2 border-b border-gray-800"><b>[${l.date}] ${l.tab}</b> - ${l.partName}<br><span class="text-gray-500">Pada ${l.km} KM (${l.gacha})</span></div>`;
+            });
+            html += '</div>';
+            Swal.fire({ title: 'LOG RIWAYAT SERVIS', html: html, background: '#171717', color: '#fff', confirmButtonColor: '#ea580c' });
         }
 
-        async function processQueue() {
-            if (syncQueue.length === 0 || !appConfig.webAppUrl || isSyncing) return;
-            isSyncing = true; setSyncStatus('SYNCING...', 'sync');
-            const item = syncQueue[0];
-            let payload = item.action === 'delete' ? { action: 'delete', id: item.id } : { action: 'insert', id: item.data.id, timestamp: item.data.timestamp, record: item.data };
+        async function editBaseline(partId, partName, currentBaseline) {
+            const tab = myData.activeTab;
+            const { value: inputKM } = await Swal.fire({
+                title: 'EDIT KM TERAKHIR',
+                html: `<span class="text-xs text-gray-400">Kapan terakhir kali <b>${partName}</b> diganti?</span>`,
+                input: 'number', inputValue: currentBaseline,
+                showCancelButton: true, background: '#171717', color: '#fff', confirmButtonColor: '#ea580c'
+            });
+
+            if (inputKM !== undefined && inputKM !== '') {
+                myData[tab].baselines[partId] = parseInt(inputKM);
+                localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
+                renderDashboard();
+            }
+        }
+
+        // Backup/Restore/Sync Functions
+        function backupData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(myData, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `MotoTracker_Ultra_${new Date().toISOString().slice(0,10)}.json`);
+            dlAnchorElem.click();
+        }
+
+        function restoreData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if(parsed.matic && parsed.moped) {
+                        myData = parsed;
+                        localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
+                        document.getElementById('syncUrl').value = myData.syncUrl || '';
+                        switchTab(myData.activeTab);
+                        Swal.fire({ icon: 'success', title: 'Restore Berhasil!', background: '#171717', color: '#fff', showConfirmButton: false, timer: 1500 });
+                    }
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Gagal', text: 'File JSON rusak.', background: '#171717', color: '#fff' });
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        async function syncToCloud() {
+            const url = document.getElementById('syncUrl').value.trim();
+            if (!url.startsWith('https://script.google.com')) return alert('URL tidak valid!');
+
+            myData.syncUrl = url;
+            localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
+            Swal.fire({ title: 'Sinkronisasi...', background: '#171717', color: '#fff', didOpen: () => { Swal.showLoading() } });
 
             try {
-                await fetch(appConfig.webAppUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-                syncQueue.shift(); localStorage.setItem('ant_queue', JSON.stringify(syncQueue));
-                if (syncQueue.length > 0) { isSyncing = false; processQueue(); } else { setSyncStatus('CLOUD CONNECTED', 'ok'); }
-            } catch (e) { setSyncStatus('OFFLINE', 'err'); } finally { isSyncing = false; }
-        }
-
-        function checkQueue() { syncQueue.length > 0 ? processQueue() : (appConfig.webAppUrl ? setSyncStatus('CLOUD CONNECTED', 'ok') : setSyncStatus('NO CLOUD', 'err')); }
-        function openSettings() { document.getElementById('settingUrl').value = appConfig.webAppUrl || ''; document.getElementById('settingsModal').classList.remove('hidden'); }
-        function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); document.getElementById('urlHistoryDropdown').classList.add('hidden'); }
-        function saveSettings() {
-            appConfig.webAppUrl = document.getElementById('settingUrl').value.trim();
-            localStorage.setItem('ant_config', JSON.stringify(appConfig));
-            if (appConfig.webAppUrl.startsWith('http')) {
-                urlHistory = urlHistory.filter(u => u !== appConfig.webAppUrl); urlHistory.unshift(appConfig.webAppUrl); 
-                if(urlHistory.length > 3) urlHistory.pop(); localStorage.setItem('ant_url_history', JSON.stringify(urlHistory));
-            }
-            closeSettings(); checkQueue();
-            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Config Saved', showConfirmButton: false, timer: 1500, background: '#171717', color: '#fff' });
-        }
-
-        function showUrlHistory() {
-            const dropdown = document.getElementById('urlHistoryDropdown');
-            if(urlHistory.length > 0) {
-                dropdown.innerHTML = urlHistory.map(url => `<div class="flex items-center justify-between p-3 hover:bg-surfaceLight cursor-pointer border-b border-surfaceLight last:border-0"><div class="text-[10px] text-gray-300 truncate w-10/12 font-mono" onclick="selectUrl('${url}')">${url}</div><button onclick="removeUrl(event, '${url}')" class="text-gray-500 hover:text-antRed p-1 transition-colors"><i class="bi bi-x-lg"></i></button></div>`).join('');
-                dropdown.classList.remove('hidden');
+                await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(myData) });
+                Swal.fire({ icon: 'success', title: 'Tersinkronisasi!', background: '#171717', color: '#fff', confirmButtonColor: '#ea580c' });
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Gagal Sync', background: '#171717', color: '#fff' });
             }
         }
-        function selectUrl(url) { document.getElementById('settingUrl').value = url; document.getElementById('urlHistoryDropdown').classList.add('hidden'); }
-        function removeUrl(event, url) { event.stopPropagation(); urlHistory = urlHistory.filter(u => u !== url); localStorage.setItem('ant_url_history', JSON.stringify(urlHistory)); showUrlHistory(); }
-        function formatInputRupiah(input) { let val = input.value.replace(/[^0-9]/g, ''); input.value = val === '' ? '' : new Intl.NumberFormat('id-ID').format(val); }
-        function formatRupiah(num) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num); }
-        function alertErr(msg) { Swal.fire({ icon: 'error', title: 'ERROR', text: msg, background: '#171717', color: '#fff', confirmButtonColor: '#ea580c' }); }
     </script>
 </body>
 </html>
