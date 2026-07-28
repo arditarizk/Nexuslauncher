@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -310,7 +310,26 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3 pt-2">
+                                        <!-- MULAI: KOTAK BACKUP & RESTORE LOKAL -->
+                    <div class="bg-dark/50 p-4 rounded-xl border border-white/5 shadow-inner">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-3 text-center">Backup & Restore Offline</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <!-- Tombol Export -->
+                            <button @click="exportConfig" class="w-full py-2.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 active:scale-95">
+                                <i class="bi bi-download"></i> Backup .json
+                            </button>
+                            <!-- Tombol Import -->
+                            <button @click="triggerImport" class="w-full py-2.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-400 font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 active:scale-95">
+                                <i class="bi bi-upload"></i> Restore .json
+                            </button>
+                            <!-- Input File Tersembunyi -->
+                            <input type="file" ref="importInput" accept=".json" class="hidden" @change="importConfig">
+                        </div>
+                        <p class="text-[9px] text-gray-500 mt-3 text-center">Simpan kode API & Link di memori HP (Bentuk File)</p>
+                    </div>
+                    <!-- AKHIR: KOTAK BACKUP & RESTORE LOKAL -->
+
+                    <div class="grid grid-cols-2 gap-3 pt-2">                      
                         <button @click="restoreData" class="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs tracking-wide rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
                             <i class="bi bi-cloud-arrow-down text-sm"></i> Tarik Cloud
                         </button>
@@ -362,6 +381,8 @@
             const syncStatusText = ref('Menunggu...');
             const syncStatusClass = ref('text-[10px] font-mono px-2 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700');
             const allAddonsActive = ref(true);
+                        const importInput = ref(null);
+
 
             // OCR Refs
             const cameraInput = ref(null);
@@ -667,10 +688,17 @@
                 });
             };
 
-            // ---- FITUR NATIVE SHARE KE WHATSAPP (FOTO + TEKS BERSAMAAN) ----
+                        // ---- FITUR NATIVE SHARE (PILIHAN BERBAGI NATIVE HP) ----
             const shareBill = async () => {
                 if (filteredHistory.value.length === 0) {
-                    return Swal.fire({ icon: 'warning', title: 'Belum Ada Data', text: 'Simpan data meteran dulu sebelum dibagikan!', background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8' });
+                    return Swal.fire({ 
+                        icon: 'warning', 
+                        title: 'Belum Ada Data', 
+                        text: 'Simpan data meteran dulu sebelum dibagikan!', 
+                        background: '#0f172a', 
+                        color: '#fff', 
+                        confirmButtonColor: '#38bdf8' 
+                    });
                 }
 
                 const latestRecord = filteredHistory.value[filteredHistory.value.length - 1];
@@ -704,30 +732,183 @@
                 waText += `*TOTAL BAYAR: ${formatRupiah(latestRecord.totalBiaya)}*\n`;
                 waText += `--------------------------------\n`;
 
-                // Coba Web Share API Native HP (Kirim Teks & Gambar Sekaligus)
-                if (imageProofFile.value && navigator.canShare) {
-                    try {
-                        const fileShare = new File([imageProofFile.value], 'Meteran_Listrik.jpg', { type: 'image/jpeg' });
-                        const filesArray = [fileShare];
-                        
-                        if (navigator.canShare({ files: filesArray })) {
-                            await navigator.share({
-                                title: 'Tagihan Listrik',
-                                text: waText,
-                                files: filesArray
-                            });
-                            removeProof();
-                            return; 
-                        }
-                    } catch (err) {
-                        console.log("Membatalkan Share Native:", err);
-                        // Lanjutkan ke wa.me jika dibatalkan/error di share pop-up
+                // 1. SIAPKAN OBJECT SHARE UTAMA
+                const shareData = {
+                    title: 'Laporan Listrik & Iuran',
+                    text: waText
+                };
+
+                // 2. SISIPKAN FOTO JIKA ADA BUKTI FOTO METERAN
+                if (imageProofFile.value) {
+                    const fileShare = new File([imageProofFile.value], 'Meteran_Listrik.jpg', { type: 'image/jpeg' });
+                    if (navigator.canShare && navigator.canShare({ files: [fileShare] })) {
+                        shareData.files = [fileShare];
                     }
                 }
 
-                // Fallback (Hanya Teks) lewat web WhatsApp
-                const phoneIbuKos = "6285855191520";
-                window.open(`https://wa.me/${phoneIbuKos}?text=${encodeURIComponent(waText)}`, '_blank');
+                // 3. UTAMAKAN MEMBUKA PILIHAN BERBAGI NATIVE HP
+                if (navigator.share) {
+                    try {
+                        await navigator.share(shareData);
+                        if (imageProofFile.value) removeProof(); // Bersihkan preview foto jika sukses
+                    } catch (err) {
+                        // Jika pengguna menutup/membatalkan menu berbagi, abaikan errornya
+                        if (err.name !== 'AbortError') {
+                            console.error("Gagal Berbagi:", err);
+                        }
+                    }
+                } else {
+                    // FALLBACK: Hanya aktif jika dibuka di Browser Laptop / Browser Tua yang tidak punya menu share
+                    const phoneIbuKos = "6285792540616";
+                    window.open(`https://wa.me/${phoneIbuKos}?text=${encodeURIComponent(waText)}`, '_blank');
+                }
+            };
+
+                        // ---- FITUR SMART BACKUP & RESTORE JSON ----
+            
+            // 1. Backup Lengkap (Pengaturan + Riwayat Transaksi)
+            const exportConfig = () => {
+                const fullBackup = {
+                    appName: "EnergyTracker",
+                    version: "2.0",
+                    exportDate: new Date().toISOString(),
+                    userName: activeUser.value,
+                    config: config,
+                    history: historyData.value
+                };
+                
+                const dataStr = JSON.stringify(fullBackup, null, 2);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `EnergyTracker_Backup_${activeUser.value || 'User'}_${recordDate.value}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                Swal.fire({ 
+                    toast: true, position: 'top', icon: 'success', 
+                    title: 'Backup Lengkap Terunduh!', showConfirmButton: false, 
+                    timer: 2000, background: '#0f172a', color: '#fff' 
+                });
+            };
+
+            const triggerImport = () => {
+                if (importInput.value) importInput.value.click();
+            };
+
+            // 2. Smart Restore (Otomatis Deteksi Format JSON Apapun)
+            const importConfig = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        let restoredItems = [];
+
+                        // KASUS A: Jika file adalah ARRAY RIWAYAT TRANSAKSI (Sesuai JSON Anda)
+                        if (Array.isArray(parsed)) {
+                            if (parsed.length > 0 && (parsed[0].meteranSekarang !== undefined || parsed[0].id !== undefined)) {
+                                mergeHistoryData(parsed);
+                                restoredItems.push("Riwayat Transaksi");
+                            }
+                        } 
+                        // KASUS B: Jika file adalah OBJECT (Pengaturan / Backup Lengkap)
+                        else if (typeof parsed === 'object' && parsed !== null) {
+                            
+                            // Restore Pengaturan (jika ada)
+                            const cfgToApply = parsed.config || parsed;
+                            if (cfgToApply.apiKey !== undefined || cfgToApply.webAppUrl !== undefined || cfgToApply.rate !== undefined) {
+                                applyConfigObject(cfgToApply);
+                                restoredItems.push("Pengaturan & API Key");
+                            }
+
+                            // Restore Riwayat Transaksi (jika ada di dalam backup object)
+                            if (Array.isArray(parsed.history)) {
+                                mergeHistoryData(parsed.history);
+                                restoredItems.push("Riwayat Transaksi");
+                            }
+                        }
+
+                        // JIKA BERHASIL
+                        if (restoredItems.length > 0) {
+                            // Simpan perubahan ke LocalStorage
+                            localStorage.setItem('st_config', JSON.stringify(config));
+                            localStorage.setItem('st_history', JSON.stringify(historyData.value));
+                            updatePreviousMeter();
+                            
+                            Swal.fire({ 
+                                icon: 'success', 
+                                title: 'Restore Berhasil!', 
+                                html: `<p class="text-xs text-gray-300">Data berhasil dipulihkan:<br><b class="text-neon">${restoredItems.join(' & ')}</b></p>`, 
+                                background: '#0f172a', 
+                                color: '#fff',
+                                confirmButtonColor: '#38bdf8'
+                            });
+                        } else {
+                            throw new Error("Format JSON tidak dikenali.");
+                        }
+
+                    } catch (err) {
+                        Swal.fire({ 
+                            icon: 'error', 
+                            title: 'Gagal Restore', 
+                            text: 'File JSON rusak atau format tidak sesuai.', 
+                            background: '#0f172a', 
+                            color: '#fff' 
+                        });
+                    }
+                    
+                    event.target.value = ''; // Reset input file
+                };
+                reader.readAsText(file);
+            };
+
+            // FUNGSI PEMBANTU 1: Penggabung Riwayat Transaksi (Anti Duplikat)
+            const mergeHistoryData = (importedArray) => {
+                const existingIds = new Set(historyData.value.map(h => String(h.id)));
+                
+                importedArray.forEach(item => {
+                    const preparedItem = {
+                        ...item,
+                        userName: item.userName || activeUser.value || "KAMAR 1"
+                    };
+                    
+                    // Jika ID transaksi belum ada, tambahkan ke riwayat
+                    if (!existingIds.has(String(preparedItem.id))) {
+                        historyData.value.push(preparedItem);
+                        existingIds.add(String(preparedItem.id));
+                    }
+                });
+            };
+
+            // FUNGSI PEMBANTU 2: Penerap Pengaturan & API Key
+            const applyConfigObject = (cfgObj) => {
+                if (cfgObj.webAppUrl !== undefined) {
+                    config.webAppUrl = cfgObj.webAppUrl;
+                    tempConfig.webAppUrl = cfgObj.webAppUrl;
+                }
+                if (cfgObj.apiKey !== undefined) {
+                    config.apiKey = cfgObj.apiKey;
+                    tempConfig.apiKey = cfgObj.apiKey;
+                }
+                if (cfgObj.rate !== undefined) {
+                    config.rate = cfgObj.rate;
+                    tempConfig.rate = cfgObj.rate;
+                }
+                if (cfgObj.initialMeter !== undefined) {
+                    config.initialMeter = cfgObj.initialMeter;
+                    tempConfig.initialMeter = cfgObj.initialMeter;
+                }
+                if (cfgObj.addons) {
+                    config.addons = cfgObj.addons;
+                    tempConfig.addons = cfgObj.addons;
+                }
             };
 
             // ---- SETTINGS & SYNC ----
@@ -850,7 +1031,8 @@
                 allAddonsActive, toggleAllAddons, editAddonPrice, saveConfig,
                 saveRecord, isSaving, deleteRecord, clearHistory, shareBill,
                 filteredHistory, reversedHistory, syncStatusText, syncStatusClass, restoreData,
-                cameraInput, galleryInput, triggerCamera, triggerGallery, processImageWithAI, imageProofUrl, removeProof, ocrLoading
+                cameraInput, galleryInput, triggerCamera, triggerGallery, processImageWithAI, imageProofUrl, removeProof, ocrLoading,
+            importInput, exportConfig, triggerImport, importConfig
             };
         }
     }).mount('#app');
