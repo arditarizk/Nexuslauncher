@@ -21,7 +21,16 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Outfit', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
-                    colors: { dark: '#0f172a', neon: '#38bdf8', accent: '#818cf8' }
+                    colors: { dark: '#0f172a', neon: '#38bdf8', accent: '#818cf8' },
+                    animation: {
+                        'gradient-x': 'gradient-x 15s ease infinite',
+                    },
+                    keyframes: {
+                        'gradient-x': {
+                            '0%, 100%': { 'background-position': '0% 50%' },
+                            '50%': { 'background-position': '100% 50%' },
+                        }
+                    }
                 }
             }
         }
@@ -30,317 +39,385 @@
     <style>
         body {
             background-color: #0f172a;
-            background-image: radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(129, 140, 248, 0.15) 0px, transparent 50%);
+            background-image: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.15), transparent 40%), 
+                              radial-gradient(circle at 85% 30%, rgba(129, 140, 248, 0.15), transparent 40%);
+            background-size: 200% 200%;
+            animation: gradient-x 15s ease infinite;
             background-attachment: fixed;
             color: #e2e8f0;
             -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
         }
-        .glass-card { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1.5rem; }
-        .input-glow:focus { outline: none; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); border-color: #38bdf8; }
-        ::-webkit-scrollbar { width: 0px; }
-        .chart-container { position: relative; height: 250px; width: 100%; }
         
+        /* Glassmorphism & Hover Effects */
+        .glass-card { 
+            background: rgba(30, 41, 59, 0.65); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 1.5rem; 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            border-color: rgba(56, 189, 248, 0.3);
+            box-shadow: 0 10px 30px -10px rgba(56, 189, 248, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .input-glow:focus { outline: none; box-shadow: 0 0 20px rgba(56, 189, 248, 0.4); border-color: #38bdf8; }
+        
+        /* Custom Scrollbar for Desktop */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.6); }
+
+        .chart-container { position: relative; height: 280px; width: 100%; }
         [v-cloak] { display: none; }
-        @keyframes popIn { 0% { opacity: 0; transform: translateY(20px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-        .animate-pop { animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        /* VUE TRANSITIONS */
+        .page-enter-active, .page-leave-active { transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        .page-enter-from, .page-leave-to { opacity: 0; transform: translateY(20px) scale(0.98); }
+        
+        .modal-enter-active, .modal-leave-active { transition: opacity 0.3s ease; }
+        .modal-enter-from, .modal-leave-to { opacity: 0; }
+        .modal-slide-enter-active, .modal-slide-leave-active { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .modal-slide-enter-from, .modal-slide-leave-to { transform: translateY(100%); }
+
+        .list-enter-active, .list-leave-active { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .list-enter-from, .list-leave-to { opacity: 0; transform: translateX(-30px) scale(0.95); }
+        .list-leave-active { position: absolute; }
     </style>
 </head>
 <body class="min-h-screen pb-6">
 
 <div id="app" v-cloak>
+    
     <!-- LOGIN SCREEN -->
-    <div v-if="!activeUser" class="fixed inset-0 z-50 bg-dark/95 flex flex-col items-center justify-center px-4 transition-opacity duration-500">
-        <div class="text-center mb-8 animate-pop">
-            <div class="w-24 h-24 mx-auto bg-gradient-to-tr from-neon to-accent rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(56,189,248,0.4)]">
-                <i class="bi bi-lightning-charge-fill text-5xl text-white"></i>
+    <transition name="page" mode="out-in">
+        <div v-if="!activeUser" class="fixed inset-0 z-50 bg-dark/95 flex flex-col items-center justify-center px-4 backdrop-blur-md">
+            <div class="text-center mb-8">
+                <div class="w-24 h-24 mx-auto bg-gradient-to-tr from-neon to-accent rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(56,189,248,0.5)] transform hover:scale-110 transition-transform duration-500">
+                    <i class="bi bi-lightning-charge-fill text-5xl text-white"></i>
+                </div>
+                <h1 class="text-4xl font-black text-white mt-6 tracking-tighter uppercase italic drop-shadow-lg">Energy <span class="text-neon">Tracker</span></h1>
+                <p class="text-accent text-xs font-mono tracking-widest mt-2 uppercase">Powered by AI Vision</p>
             </div>
-            <h1 class="text-3xl font-black text-white mt-4 tracking-tighter uppercase italic">Energy <span class="text-neon">Tracker</span></h1>
-            <p class="text-accent text-xs font-mono tracking-widest mt-1 uppercase">Powered by AI Vision</p>
-        </div>
-        <div class="w-full max-w-sm glass-card p-6 border border-neon/20 shadow-[0_0_20px_rgba(56,189,248,0.1)] animate-pop" style="animation-delay: 0.1s;">
-            <label class="text-[10px] text-gray-400 font-bold uppercase block mb-2 text-center tracking-widest">IDENTITAS KAMAR / PENGGUNA</label>
-            <input type="text" v-model="loginInput" @keypress.enter="loginUser" placeholder="Misal: Kamar 1, Ardita..." class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-4 text-center font-bold text-lg mb-4 uppercase text-neon placeholder:text-gray-700 input-glow transition-all">
-            <button @click="loginUser" class="w-full py-4 bg-gradient-to-r from-neon to-accent hover:opacity-90 text-white font-black uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95">
-                MULAI MENCATAT
-            </button>
-        </div>
-    </div>
-
-    <!-- MAIN DASHBOARD -->
-    <div v-else>
-        <!-- Header -->
-        <header class="fixed top-0 w-full z-40 glass-card !rounded-none !border-x-0 !border-t-0 bg-opacity-80">
-            <div class="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <i class="bi bi-lightning-charge-fill text-yellow-400 text-xl drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]"></i>
-                    <div class="leading-none mt-1">
-                        <h1 class="font-bold text-lg tracking-wide leading-tight">Energy<span class="text-neon font-light">Tracker</span></h1>
-                        <p class="text-[8px] text-accent font-mono tracking-widest uppercase">By Ardita</p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="text-right hidden sm:block">
-                        <p class="text-[8px] text-gray-400 uppercase font-bold">Kamar</p>
-                        <p class="text-xs font-bold text-white uppercase truncate max-w-[80px]">{{ activeUser }}</p>
-                    </div>
-                    <span :class="syncStatusClass">{{ syncStatusText }}</span>
-                    <button @click="isSettingsOpen = true" class="p-2 rounded-full hover:bg-white/10 transition-colors text-gray-300">
-                        <i class="bi bi-gear-fill text-lg"></i>
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <main class="max-w-md mx-auto px-4 pt-24 space-y-6">
-
-            <!-- Main Display Card -->
-            <div class="glass-card p-6 relative overflow-hidden border-t-4 border-t-neon shadow-[0_0_20px_rgba(56,189,248,0.1)] animate-pop">
-                <div class="absolute top-0 right-0 p-4 opacity-10"><i class="bi bi-cpu text-6xl"></i></div>
-                
-                <div class="text-center mb-6">
-                    <p class="text-gray-400 text-xs uppercase tracking-widest mb-1">Total Estimasi Tagihan</p>
-                    <h2 class="text-4xl font-mono font-bold text-white tracking-tighter drop-shadow-lg">{{ formatRupiah(computedTotal) }}</h2>
-                    <div class="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
-                        <i class="bi bi-lightning-fill text-yellow-400 text-xs animate-pulse"></i>
-                        <span class="text-xs font-mono text-neon">{{ computedUsage }} kWh</span>
-                    </div>
-                </div>
-
-                <!-- Input Section -->
-                <div class="space-y-4 relative z-10">
-                    <div>
-                        <label class="text-xs text-gray-400 ml-1 font-semibold flex justify-between">
-                            Meteran Saat Ini (Akhir)
-                            <span v-if="ocrLoading" class="text-neon animate-pulse"><i class="bi bi-robot"></i> Mengirim ke AI...</span>
-                        </label>
-                        <div class="relative mt-1 flex items-center gap-2">
-                            <input type="number" v-model.number="currentMeter" placeholder="0000" 
-                                :class="{'border-red-500 text-red-500': currentMeter > 0 && currentMeter <= previousMeter}"
-                                class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-4 text-3xl font-mono text-white input-glow transition-all">
-                            
-                            <!-- Pilihan Tombol -->
-                            <div class="flex gap-2 shrink-0">
-                                <button @click="triggerCamera" :disabled="ocrLoading" class="h-[70px] w-[55px] bg-neon/10 border border-neon/30 rounded-xl text-neon flex flex-col items-center justify-center hover:bg-neon hover:text-white transition-all active:scale-95 disabled:opacity-50">
-                                    <i v-if="ocrLoading" class="bi bi-arrow-repeat animate-spin text-xl"></i>
-                                    <i v-else class="bi bi-camera-fill text-xl"></i>
-                                    <span class="text-[8px] font-bold mt-1 uppercase tracking-wider">Foto</span>
-                                </button>
-                                
-                                <button @click="triggerGallery" :disabled="ocrLoading" class="h-[70px] w-[55px] bg-accent/10 border border-accent/30 rounded-xl text-accent flex flex-col items-center justify-center hover:bg-accent hover:text-white transition-all active:scale-95 disabled:opacity-50">
-                                    <i v-if="ocrLoading" class="bi bi-arrow-repeat animate-spin text-xl"></i>
-                                    <i v-else class="bi bi-images text-xl"></i>
-                                    <span class="text-[8px] font-bold mt-1 uppercase tracking-wider">Galeri</span>
-                                </button>
-                            </div>
-
-                            <input type="file" ref="cameraInput" accept="image/*" capture="environment" class="hidden" @change="processImageWithAI">
-                            <input type="file" ref="galleryInput" accept="image/*" class="hidden" @change="processImageWithAI">
-                        </div>
-                        
-                        <div v-if="imageProofUrl" class="mt-3 relative w-full h-32 rounded-xl overflow-hidden border border-neon/50 animate-pop">
-                            <img :src="imageProofUrl" class="w-full h-full object-cover opacity-80" />
-                            <div class="absolute inset-0 bg-gradient-to-t from-dark/90 to-transparent flex flex-col justify-end p-2">
-                                <p class="text-[10px] text-neon font-mono"><i class="bi bi-check-circle-fill"></i> Bukti Siap Dikirim Ke WA</p>
-                            </div>
-                            <button @click="removeProof" class="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white rounded-full h-7 w-7 flex items-center justify-center backdrop-blur-sm transition-colors">
-                                <i class="bi bi-x text-lg"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs text-gray-400 ml-1 font-semibold">Meteran Lalu</label>
-                            <input type="number" v-model.number="previousMeter" readonly 
-                                class="w-full mt-1 bg-dark/30 border border-gray-700 rounded-lg px-3 py-3 text-sm font-mono text-gray-500 cursor-not-allowed">
-                        </div>
-                        <div>
-                            <label class="text-xs text-gray-400 ml-1 font-semibold">Tgl Pencatatan</label>
-                            <input type="date" v-model="recordDate" 
-                                class="w-full mt-1 bg-dark/50 border border-gray-700 rounded-lg px-3 py-3 text-sm text-gray-300 focus:border-neon outline-none transition-all">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Add-ons (Toppings) -->
-            <div class="glass-card p-5 animate-pop" style="animation-delay: 0.1s;">
-                <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                        <i class="bi bi-receipt text-accent"></i> Biaya Tambahan
-                    </h3>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] text-gray-400 uppercase font-bold">Pilih Semua</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" v-model="allAddonsActive" @change="toggleAllAddons" class="sr-only peer">
-                            <div class="w-7 h-4 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-neon"></div>
-                        </label>
-                    </div>
-                </div>
-                <div class="space-y-2">
-                    <div v-for="(addon, index) in config.addons" :key="addon.id" class="flex items-center justify-between p-3 rounded-xl bg-dark/40 border border-white/5 hover:border-white/10 transition-colors">
-                        <div class="flex items-center gap-3 w-full">
-                            <div class="relative flex items-center">
-                                <input type="checkbox" v-model="addon.active" @change="saveConfig" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-500 transition-all checked:border-neon checked:bg-neon">
-                                <i class="bi bi-check text-white absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm opacity-0 peer-checked:opacity-100 pointer-events-none"></i>
-                            </div>
-                            <span class="text-xs text-gray-300 font-bold select-none cursor-pointer flex-1 uppercase tracking-wide" @click="addon.active = !addon.active; saveConfig()">{{ addon.name }}</span>
-                            <div class="flex items-center gap-2">
-                                <span class="text-[11px] font-mono font-bold text-gray-400 select-none bg-dark px-2 py-1 rounded border border-gray-700">{{ formatRupiah(addon.price) }}</span>
-                                <button @click="editAddonPrice(index)" class="text-gray-500 hover:text-neon transition-colors p-1.5 bg-white/5 rounded hover:bg-white/10">
-                                    <i class="bi bi-pencil-square text-xs"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="grid grid-cols-2 gap-3 animate-pop" style="animation-delay: 0.2s;">
-                <button @click="saveRecord" :disabled="isSaving" class="glass-card p-4 flex items-center justify-center gap-2 bg-neon/10 hover:bg-neon/20 border border-neon/30 transition-all group active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-[0_0_15px_rgba(56,189,248,0.15)]">
-                    <i :class="isSaving ? 'bi-cpu animate-spin' : 'bi-cloud-arrow-up-fill'" class="bi text-neon group-hover:text-white transition-colors"></i>
-                    <span class="text-sm font-bold text-neon group-hover:text-white transition-colors uppercase">{{ isSaving ? 'SYNCING' : 'SIMPAN' }}</span>
-                </button>
-                <button @click="shareBill" class="glass-card p-4 flex items-center justify-center gap-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 transition-all group active:scale-95 rounded-xl shadow-[0_0_15px_rgba(34,197,94,0.15)]">
-                    <i class="bi bi-whatsapp text-green-400 group-hover:text-white transition-colors"></i>
-                    <span class="text-sm font-bold text-green-400 group-hover:text-white transition-colors uppercase">KIRIM WA</span>
+            <div class="w-full max-w-sm glass-card p-8 border border-neon/30 shadow-[0_0_30px_rgba(56,189,248,0.2)]">
+                <label class="text-[10px] text-gray-400 font-bold uppercase block mb-3 text-center tracking-widest">IDENTITAS KAMAR / PENGGUNA</label>
+                <input type="text" v-model="loginInput" @keypress.enter="loginUser" placeholder="Misal: Kamar 1, Ardita..." class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-4 text-center font-bold text-lg mb-6 uppercase text-neon placeholder:text-gray-700 input-glow transition-all duration-300">
+                <button @click="loginUser" class="w-full py-4 bg-gradient-to-r from-neon to-accent hover:from-accent hover:to-neon text-white font-black uppercase tracking-widest rounded-xl transition-all duration-500 shadow-lg hover:shadow-neon/50 active:scale-95">
+                    MULAI MENCATAT
                 </button>
             </div>
+        </div>
 
-            <!-- Chart Section -->
-            <div class="glass-card p-5 animate-pop" style="animation-delay: 0.3s;">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-wider"><i class="bi bi-graph-up-arrow text-accent mr-1"></i> Grafik Pemakaian</h3>
-                </div>
-                <div class="chart-container">
-                    <canvas id="usageChart"></canvas>
-                </div>
-            </div>
-
-            <!-- History Detail Section -->
-            <div class="glass-card p-5 animate-pop" style="animation-delay: 0.4s;">
-                <div class="flex flex-col mb-4 border-b border-white/10 pb-2">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                            <i class="bi bi-list-ul text-neon"></i> Log Tagihan
-                        </h3>
-                        <button @click="clearHistory" class="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition-colors font-bold uppercase">
-                            <i class="bi bi-trash"></i> Reset
+        <!-- MAIN DASHBOARD -->
+        <div v-else class="w-full">
+            <!-- Header (Responsive Width) -->
+            <header class="fixed top-0 w-full z-40 bg-dark/80 backdrop-blur-xl border-b border-white/10 shadow-lg">
+                <div class="max-w-6xl mx-auto px-4 lg:px-8 h-20 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="bi bi-lightning-charge-fill text-yellow-400 text-2xl drop-shadow-[0_0_12px_rgba(250,204,21,0.8)]"></i>
+                        <div class="leading-none mt-1">
+                            <h1 class="font-bold text-xl tracking-wide leading-tight">Energy<span class="text-neon font-light">Tracker</span></h1>
+                            <p class="text-[9px] text-accent font-mono tracking-widest uppercase mt-0.5">By Ardita</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-[10px] text-gray-400 uppercase font-bold">Kamar</p>
+                            <p class="text-sm font-bold text-white uppercase truncate max-w-[120px]">{{ activeUser }}</p>
+                        </div>
+                        <span :class="syncStatusClass" class="transition-colors duration-300">{{ syncStatusText }}</span>
+                        <button @click="isSettingsOpen = true" class="p-2.5 rounded-full bg-white/5 hover:bg-white/15 transition-all text-gray-300 hover:text-white border border-transparent hover:border-white/20 active:scale-95">
+                            <i class="bi bi-gear-fill text-xl"></i>
                         </button>
                     </div>
-                    <p class="text-[9px] text-gray-500 font-mono mt-1">Data difilter untuk: <span class="text-white font-bold">{{ activeUser }}</span></p>
                 </div>
-                
-                <div class="space-y-3">
-                    <div v-if="filteredHistory.length === 0" class="p-6 border border-dashed border-gray-700 text-center rounded-xl bg-dark/50">
-                        <p class="text-xs text-gray-500 font-mono uppercase">Belum ada riwayat tagihan.</p>
-                    </div>
-                    <div v-for="tx in reversedHistory" :key="tx.id" class="flex items-center justify-between bg-dark/50 border border-white/5 p-4 rounded-xl hover:border-gray-600 transition-colors">
-                        <div>
-                            <p class="text-xs text-white font-bold uppercase tracking-widest mb-1"><i class="bi bi-calendar-check text-neon mr-1"></i> {{ formatDate(tx.date) }}</p>
-                            <p class="text-[10px] text-gray-400 font-mono">{{ tx.meteranLalu }} <i class="bi bi-arrow-right text-gray-600"></i> {{ tx.meteranSekarang }} <span class="text-neon font-bold ml-1">({{ tx.pemakaian }} kWh)</span></p>
-                        </div>
-                        <div class="flex flex-col items-end">
-                            <span class="text-sm font-mono font-black text-green-400">{{ formatRupiah(tx.totalBiaya) }}</span>
-                            <button @click="deleteRecord(tx.id)" class="text-gray-600 hover:text-red-500 transition-colors p-1 mt-1" title="Hapus">
-                                <i class="bi bi-trash-fill"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </header>
 
-        </main>
-
-        <!-- Settings Modal (AMAN DARI GITHUB) -->
-        <div v-if="isSettingsOpen" class="fixed inset-0 z-50">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="closeSettings"></div>
-            <div class="absolute bottom-0 w-full glass-card !rounded-b-none p-6 animate-slide-up max-h-[90vh] overflow-y-auto bg-slate-900 border-t border-neon/50 shadow-[0_-10px_40px_rgba(56,189,248,0.2)]">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-black text-white uppercase tracking-tight"><i class="bi bi-sliders text-neon mr-2"></i> Pengaturan</h3>
-                    <button @click="closeSettings" class="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/10">
-                        <i class="bi bi-x-lg text-white"></i>
-                    </button>
-                </div>
-
-                <div class="space-y-5">
+            <!-- Responsive Grid Content -->
+            <main class="max-w-6xl mx-auto px-4 lg:px-8 pt-28 pb-12">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
                     
-                    <!-- Manajemen User -->
-                    <div class="bg-dark/80 p-4 rounded-xl border border-white/5 flex justify-between items-center shadow-inner">
-                        <div>
-                            <p class="text-[9px] text-gray-500 uppercase font-bold tracking-widest">Login Sebagai:</p>
-                            <span class="text-sm text-neon font-black uppercase">{{ activeUser }}</span>
+                    <!-- KOLOM KIRI (Input & Kontrol) -->
+                    <div class="lg:col-span-5 space-y-6">
+                        
+                        <!-- Main Display Card -->
+                        <div class="glass-card p-6 lg:p-8 relative overflow-hidden border-t-4 border-t-neon">
+                            <div class="absolute top-0 right-0 p-4 opacity-5 transform rotate-12 scale-150 transition-transform duration-700 hover:scale-110"><i class="bi bi-cpu text-8xl"></i></div>
+                            
+                            <div class="text-center mb-8 relative z-10">
+                                <p class="text-gray-400 text-xs uppercase tracking-widest mb-2 font-semibold">Total Estimasi Tagihan</p>
+                                <h2 class="text-4xl lg:text-5xl font-mono font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] transition-all">{{ formatRupiah(computedTotal) }}</h2>
+                                <div class="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                                    <i class="bi bi-lightning-fill text-yellow-400 text-sm animate-pulse"></i>
+                                    <span class="text-sm font-mono text-neon font-bold">{{ computedUsage }} kWh</span>
+                                </div>
+                            </div>
+
+                            <!-- Input Section -->
+                            <div class="space-y-5 relative z-10">
+                                <div>
+                                    <label class="text-xs text-gray-400 ml-1 font-semibold flex justify-between mb-2">
+                                        Meteran Saat Ini (Akhir)
+                                        <span v-if="ocrLoading" class="text-neon animate-pulse"><i class="bi bi-robot"></i> Menganalisis AI...</span>
+                                    </label>
+                                    <div class="relative flex items-center gap-3">
+                                        <input type="number" v-model.number="currentMeter" placeholder="0000" 
+                                            :class="{'border-red-500 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]': currentMeter > 0 && currentMeter <= previousMeter}"
+                                            class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-5 text-3xl font-mono text-white input-glow transition-all duration-300">
+                                        
+                                        <!-- Pilihan Tombol -->
+                                        <div class="flex gap-2 shrink-0">
+                                            <button @click="triggerCamera" :disabled="ocrLoading" class="h-[76px] w-[60px] bg-neon/10 border border-neon/30 rounded-xl text-neon flex flex-col items-center justify-center hover:bg-neon hover:text-white transition-all duration-300 hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] active:scale-90 disabled:opacity-50">
+                                                <i v-if="ocrLoading" class="bi bi-arrow-repeat animate-spin text-2xl"></i>
+                                                <i v-else class="bi bi-camera-fill text-2xl"></i>
+                                                <span class="text-[9px] font-bold mt-1.5 uppercase tracking-wider">Foto</span>
+                                            </button>
+                                            
+                                            <button @click="triggerGallery" :disabled="ocrLoading" class="h-[76px] w-[60px] bg-accent/10 border border-accent/30 rounded-xl text-accent flex flex-col items-center justify-center hover:bg-accent hover:text-white transition-all duration-300 hover:shadow-[0_0_20px_rgba(129,140,248,0.4)] active:scale-90 disabled:opacity-50">
+                                                <i v-if="ocrLoading" class="bi bi-arrow-repeat animate-spin text-2xl"></i>
+                                                <i v-else class="bi bi-images text-2xl"></i>
+                                                <span class="text-[9px] font-bold mt-1.5 uppercase tracking-wider">Galeri</span>
+                                            </button>
+                                        </div>
+
+                                        <input type="file" ref="cameraInput" accept="image/*" capture="environment" class="hidden" @change="processImageWithAI">
+                                        <input type="file" ref="galleryInput" accept="image/*" class="hidden" @change="processImageWithAI">
+                                    </div>
+                                    
+                                    <transition name="page">
+                                        <div v-if="imageProofUrl" class="mt-4 relative w-full h-36 rounded-xl overflow-hidden border border-neon/50 shadow-[0_0_20px_rgba(56,189,248,0.2)]">
+                                            <img :src="imageProofUrl" class="w-full h-full object-cover opacity-90 transition-transform duration-700 hover:scale-110" />
+                                            <div class="absolute inset-0 bg-gradient-to-t from-dark/95 via-dark/40 to-transparent flex flex-col justify-end p-3">
+                                                <p class="text-[11px] text-neon font-mono font-bold"><i class="bi bi-check-circle-fill"></i> Bukti Siap Dikirim Ke WA</p>
+                                            </div>
+                                            <button @click="removeProof" class="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white rounded-full h-8 w-8 flex items-center justify-center backdrop-blur-md transition-all duration-300 hover:rotate-90">
+                                                <i class="bi bi-x text-xl"></i>
+                                            </button>
+                                        </div>
+                                    </transition>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-xs text-gray-400 ml-1 font-semibold">Meteran Lalu</label>
+                                        <input type="number" v-model.number="previousMeter" readonly 
+                                            class="w-full mt-1.5 bg-dark/30 border border-gray-700/50 rounded-xl px-4 py-3.5 text-sm font-mono text-gray-500 cursor-not-allowed">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-400 ml-1 font-semibold">Tgl Pencatatan</label>
+                                        <input type="date" v-model="recordDate" 
+                                            class="w-full mt-1.5 bg-dark/50 border border-gray-600 rounded-xl px-4 py-3.5 text-sm text-gray-200 focus:border-neon focus:ring-1 focus:ring-neon outline-none transition-all duration-300">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <button @click="logoutUser" class="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 px-4 py-2 rounded-lg uppercase font-bold hover:bg-red-500 hover:text-white transition-colors shadow-lg">
-                            <i class="bi bi-box-arrow-right"></i> LOGOUT
-                        </button>
-                    </div>
 
-                    <!-- PENGATURAN API KEY (SANGAT AMAN DARI GITHUB) -->
-                    <div class="bg-neon/5 border border-neon/20 p-4 rounded-xl">
-                        <label class="block text-[10px] text-neon font-bold uppercase tracking-wider mb-2">Google Gemini API Key (Untuk Kamera)</label>
-                        <div class="relative">
-                            <input type="password" v-model="tempConfig.apiKey" placeholder="Tempel AIzaSy..." class="w-full bg-dark/80 border border-gray-600 rounded-lg px-4 py-3 text-sm text-white focus:border-neon outline-none font-mono">
+                        <!-- Add-ons (Toppings) -->
+                        <div class="glass-card p-6">
+                            <div class="flex justify-between items-center mb-5 border-b border-white/10 pb-3">
+                                <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                    <i class="bi bi-receipt text-accent"></i> Biaya Tambahan
+                                </h3>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[11px] text-gray-400 uppercase font-bold">Pilih Semua</span>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" v-model="allAddonsActive" @change="toggleAllAddons" class="sr-only peer">
+                                        <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all duration-300 peer-checked:bg-neon shadow-inner"></div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <div v-for="(addon, index) in config.addons" :key="addon.id" class="flex items-center justify-between p-3.5 rounded-xl bg-dark/40 border border-white/5 hover:border-white/20 hover:bg-white/5 transition-all duration-300 group">
+                                    <div class="flex items-center gap-3 w-full">
+                                        <div class="relative flex items-center">
+                                            <input type="checkbox" v-model="addon.active" @change="saveConfig" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-500 transition-all checked:border-neon checked:bg-neon checked:shadow-[0_0_10px_rgba(56,189,248,0.5)]">
+                                            <i class="bi bi-check text-white absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity"></i>
+                                        </div>
+                                        <span class="text-sm text-gray-300 font-bold select-none cursor-pointer flex-1 uppercase tracking-wide group-hover:text-white transition-colors" @click="addon.active = !addon.active; saveConfig()">{{ addon.name }}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-mono font-bold text-gray-400 select-none bg-dark/80 px-2.5 py-1.5 rounded-lg border border-gray-700 group-hover:border-gray-500 transition-colors">{{ formatRupiah(addon.price) }}</span>
+                                            <button @click="editAddonPrice(index)" class="text-gray-500 hover:text-neon transition-colors p-2 bg-white/5 rounded-lg hover:bg-neon/10 active:scale-90">
+                                                <i class="bi bi-pencil-square text-sm"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <p class="text-[9px] text-gray-400 mt-2">Kunci disimpan aman di HP Anda. Ini menyelesaikan masalah GitHub Secret Detected.</p>
-                    </div>
 
-                    <!-- Tarif Dasar -->
-                    <div>
-                        <label class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Tarif Listrik per kWh</label>
-                        <div class="relative">
-                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-mono">Rp</span>
-                            <input type="number" v-model.number="tempConfig.rate" class="w-full bg-dark/80 border border-gray-600 rounded-lg pl-12 pr-4 py-3 text-white focus:border-neon outline-none font-mono">
-                        </div>
-                    </div>
-
-                    <!-- Set Awal Meteran -->
-                    <div v-if="filteredHistory.length === 0" class="bg-dark/50 p-4 rounded-xl border border-dashed border-gray-700">
-                        <label class="block text-sm text-neon mb-1 font-bold">Set Meteran Awal</label>
-                        <p class="text-[10px] text-gray-400 mb-3">Karena riwayat akun ini kosong, masukkan angka meteran bulan lalu.</p>
-                        <input type="number" v-model.number="tempConfig.initialMeter" class="w-full bg-dark border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-neon outline-none font-mono font-bold" placeholder="0000">
-                    </div>
-
-                    <!-- URL API Google Sheets -->
-                    <div>
-                        <label class="block text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">API Google Sheets (Cloud Sync)</label>
-                        <div class="relative">
-                            <input type="url" v-model="tempConfig.webAppUrl" placeholder="Kosongkan untuk pakai default..." class="w-full bg-dark/80 border border-gray-600 rounded-lg px-4 py-3 text-sm text-white focus:border-neon outline-none font-mono" autocomplete="off">
-                        </div>
-                    </div>
-
-                                        <!-- MULAI: KOTAK BACKUP & RESTORE LOKAL -->
-                    <div class="bg-dark/50 p-4 rounded-xl border border-white/5 shadow-inner">
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-3 text-center">Backup & Restore Offline</p>
-                        <div class="grid grid-cols-2 gap-3">
-                            <!-- Tombol Export -->
-                            <button @click="exportConfig" class="w-full py-2.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 active:scale-95">
-                                <i class="bi bi-download"></i> Backup .json
+                        <!-- Actions -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <button @click="saveRecord" :disabled="isSaving" class="glass-card p-5 flex items-center justify-center gap-3 bg-neon/10 hover:bg-neon/20 border-neon/30 hover:border-neon/60 transition-all duration-300 group active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(56,189,248,0.15)] hover:shadow-[0_0_30px_rgba(56,189,248,0.3)]">
+                                <i :class="isSaving ? 'bi-cpu animate-spin' : 'bi-cloud-arrow-up-fill'" class="bi text-neon group-hover:text-white text-xl transition-colors"></i>
+                                <span class="text-sm lg:text-base font-black text-neon group-hover:text-white transition-colors uppercase tracking-wider">{{ isSaving ? 'SYNCING...' : 'SIMPAN' }}</span>
                             </button>
-                            <!-- Tombol Import -->
-                            <button @click="triggerImport" class="w-full py-2.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-400 font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 active:scale-95">
-                                <i class="bi bi-upload"></i> Restore .json
+                            <button @click="shareBill" class="glass-card p-5 flex items-center justify-center gap-3 bg-green-500/10 hover:bg-green-500/20 border-green-500/30 hover:border-green-500/60 transition-all duration-300 group active:scale-95 shadow-[0_0_20px_rgba(34,197,94,0.15)] hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+                                <i class="bi bi-whatsapp text-green-400 group-hover:text-white text-xl transition-colors"></i>
+                                <span class="text-sm lg:text-base font-black text-green-400 group-hover:text-white transition-colors uppercase tracking-wider">KIRIM WA</span>
                             </button>
-                            <!-- Input File Tersembunyi -->
-                            <input type="file" ref="importInput" accept=".json" class="hidden" @change="importConfig">
                         </div>
-                        <p class="text-[9px] text-gray-500 mt-3 text-center">Simpan kode API & Link di memori HP (Bentuk File)</p>
-                    </div>
-                    <!-- AKHIR: KOTAK BACKUP & RESTORE LOKAL -->
 
-                    <div class="grid grid-cols-2 gap-3 pt-2">                      
-                        <button @click="restoreData" class="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs tracking-wide rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                            <i class="bi bi-cloud-arrow-down text-sm"></i> Tarik Cloud
-                        </button>
-                        <button @click="applySettings" class="w-full py-3.5 bg-white text-dark font-black tracking-widest uppercase rounded-xl transition-colors shadow-lg active:scale-[0.98] flex items-center justify-center gap-2">
-                            <i class="bi bi-check-lg text-sm"></i> Simpan
-                        </button>
+                    </div>
+
+                    <!-- KOLOM KANAN (Statistik & Riwayat) -->
+                    <div class="lg:col-span-7 space-y-6 flex flex-col">
+                        
+                        <!-- Chart Section -->
+                        <div class="glass-card p-6 lg:p-8 flex-shrink-0">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-sm lg:text-base font-bold text-white uppercase tracking-wider flex items-center"><i class="bi bi-graph-up-arrow text-accent mr-2 text-lg"></i> Grafik Pemakaian Listrik</h3>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="usageChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- History Detail Section -->
+                        <div class="glass-card p-6 lg:p-8 flex-grow flex flex-col">
+                            <div class="flex flex-col mb-5 border-b border-white/10 pb-4">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="text-sm lg:text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                        <i class="bi bi-list-ul text-neon text-lg"></i> Log Tagihan Terakhir
+                                    </h3>
+                                    <button @click="clearHistory" class="text-[10px] lg:text-xs bg-red-500/10 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition-all duration-300 font-bold uppercase active:scale-90">
+                                        <i class="bi bi-trash"></i> Reset Data
+                                    </button>
+                                </div>
+                                <p class="text-[10px] text-gray-500 font-mono mt-2">Data difilter untuk entitas: <span class="text-neon font-bold ml-1 bg-neon/10 px-2 py-0.5 rounded">{{ activeUser }}</span></p>
+                            </div>
+                            
+                            <div class="space-y-4 overflow-y-auto max-h-[500px] pr-2 relative">
+                                <transition name="page">
+                                    <div v-if="filteredHistory.length === 0" class="p-8 border-2 border-dashed border-gray-700/50 text-center rounded-2xl bg-dark/30">
+                                        <i class="bi bi-inbox text-4xl text-gray-600 mb-3 block"></i>
+                                        <p class="text-sm text-gray-400 font-mono uppercase tracking-widest">Belum ada riwayat tagihan.</p>
+                                    </div>
+                                </transition>
+                                
+                                <transition-group name="list" tag="div" class="space-y-3 relative">
+                                    <div v-for="tx in reversedHistory" :key="tx.id" class="flex items-center justify-between bg-dark/40 border border-white/5 p-4 lg:p-5 rounded-2xl hover:border-gray-500 hover:bg-white/5 transition-all duration-300 group">
+                                        <div>
+                                            <p class="text-xs lg:text-sm text-white font-bold uppercase tracking-widest mb-1.5"><i class="bi bi-calendar-check text-neon mr-1.5"></i> {{ formatDate(tx.date) }}</p>
+                                            <p class="text-[11px] lg:text-xs text-gray-400 font-mono flex items-center gap-2">
+                                                <span class="bg-dark/80 px-2 py-1 rounded border border-gray-700">{{ tx.meteranLalu }}</span>
+                                                <i class="bi bi-arrow-right text-gray-600"></i> 
+                                                <span class="bg-dark/80 px-2 py-1 rounded border border-gray-700">{{ tx.meteranSekarang }}</span>
+                                                <span class="text-neon font-bold ml-2 bg-neon/10 px-2 py-1 rounded">{{ tx.pemakaian }} kWh</span>
+                                            </p>
+                                        </div>
+                                        <div class="flex flex-col items-end">
+                                            <span class="text-base lg:text-lg font-mono font-black text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.3)]">{{ formatRupiah(tx.totalBiaya) }}</span>
+                                            <button @click="deleteRecord(tx.id)" class="text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-all duration-300 p-2 rounded-lg mt-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100" title="Hapus Data Ini">
+                                                <i class="bi bi-trash-fill text-sm"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </transition-group>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
-    </div>
+    </transition>
+
+    <!-- Settings Modal dengan Animasi Canggih -->
+    <transition name="modal">
+        <div v-if="isSettingsOpen" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
+            <!-- Overlay -->
+            <div class="absolute inset-0 bg-dark/90 backdrop-blur-md transition-opacity" @click="closeSettings"></div>
+            
+            <!-- Modal Content -->
+            <transition name="modal-slide" appear>
+                <div v-if="isSettingsOpen" class="relative w-full max-w-lg glass-card !rounded-b-none sm:!rounded-3xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto bg-slate-900 border border-neon/30 shadow-[0_-10px_50px_rgba(56,189,248,0.15)] z-10">
+                    
+                    <div class="flex justify-between items-center mb-6 sticky top-0 bg-slate-900/90 backdrop-blur pb-4 z-20 border-b border-white/10">
+                        <h3 class="text-xl font-black text-white uppercase tracking-tight"><i class="bi bi-sliders text-neon mr-2"></i> Pengaturan Sistem</h3>
+                        <button @click="closeSettings" class="p-2.5 rounded-full bg-white/5 hover:bg-red-500/20 hover:text-red-400 transition-colors border border-white/10 group active:scale-90">
+                            <i class="bi bi-x-lg text-white group-hover:text-red-400 transition-colors"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-6 relative z-10">
+                        
+                        <!-- Manajemen User -->
+                        <div class="bg-dark/60 p-5 rounded-2xl border border-white/5 flex justify-between items-center shadow-inner hover:border-white/10 transition-colors">
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">Login Saat Ini:</p>
+                                <span class="text-base text-neon font-black uppercase">{{ activeUser }}</span>
+                            </div>
+                            <button @click="logoutUser" class="text-xs bg-red-500/10 text-red-400 border border-red-500/30 px-5 py-2.5 rounded-xl uppercase font-bold hover:bg-red-500 hover:text-white transition-all duration-300 shadow-lg active:scale-95 flex items-center gap-2">
+                                <i class="bi bi-box-arrow-right"></i> LOGOUT
+                            </button>
+                        </div>
+
+                        <!-- PENGATURAN API KEY -->
+                        <div class="bg-neon/5 border border-neon/20 p-5 rounded-2xl transition-all duration-300 hover:border-neon/40 hover:bg-neon/10">
+                            <label class="block text-[11px] text-neon font-bold uppercase tracking-wider mb-3">Google Gemini API Key (Vision AI)</label>
+                            <div class="relative">
+                                <input type="password" v-model="tempConfig.apiKey" placeholder="Tempel AIzaSy..." class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-3.5 text-sm text-white focus:border-neon focus:ring-1 focus:ring-neon outline-none font-mono transition-all">
+                            </div>
+                            <p class="text-[10px] text-gray-400 mt-2.5 leading-relaxed">Kunci aman disimpan di penyimpanan lokal HP Anda. Dibutuhkan untuk membaca meteran via Foto.</p>
+                        </div>
+
+                        <!-- Tarif Dasar -->
+                        <div>
+                            <label class="block text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-2">Tarif Listrik per kWh</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-mono bg-dark/50 px-2 py-1 rounded">Rp</span>
+                                <input type="number" v-model.number="tempConfig.rate" class="w-full bg-dark/60 border border-gray-600 rounded-xl pl-16 pr-4 py-3.5 text-white focus:border-neon outline-none font-mono transition-all">
+                            </div>
+                        </div>
+
+                        <!-- Set Awal Meteran -->
+                        <transition name="page">
+                            <div v-if="filteredHistory.length === 0" class="bg-dark/40 p-5 rounded-2xl border-2 border-dashed border-gray-600 hover:border-gray-400 transition-colors">
+                                <label class="block text-sm text-neon mb-1.5 font-bold">Set Meteran Awal Bulan</label>
+                                <p class="text-[10px] text-gray-400 mb-4 leading-relaxed">Riwayat akun ini masih kosong. Silakan masukkan angka meteran bulan lalu sebagai patokan awal.</p>
+                                <input type="number" v-model.number="tempConfig.initialMeter" class="w-full bg-dark border border-gray-600 rounded-xl px-4 py-3.5 text-white focus:border-neon outline-none font-mono font-bold text-lg" placeholder="00000">
+                            </div>
+                        </transition>
+
+                        <!-- URL API Google Sheets -->
+                        <div>
+                            <label class="block text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-2 flex items-center gap-2"><i class="bi bi-cloud-arrow-up text-accent"></i> API Cloud Sync (G-Sheets)</label>
+                            <div class="relative">
+                                <input type="url" v-model="tempConfig.webAppUrl" placeholder="https://script.google.com/..." class="w-full bg-dark/60 border border-gray-600 rounded-xl px-4 py-3.5 text-sm text-white focus:border-neon outline-none font-mono transition-all" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <!-- BACKUP & RESTORE LOKAL -->
+                        <div class="bg-dark/40 p-5 rounded-2xl border border-white/5 shadow-inner">
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-4 text-center">Manajemen Data Offline</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button @click="exportConfig" class="w-full py-3 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/30 font-bold text-xs uppercase rounded-xl transition-all duration-300 flex items-center justify-center gap-2 active:scale-95">
+                                    <i class="bi bi-download text-base"></i> Backup
+                                </button>
+                                <button @click="triggerImport" class="w-full py-3 bg-purple-500/10 hover:bg-purple-500 text-purple-400 hover:text-white border border-purple-500/30 font-bold text-xs uppercase rounded-xl transition-all duration-300 flex items-center justify-center gap-2 active:scale-95">
+                                    <i class="bi bi-upload text-base"></i> Restore
+                                </button>
+                                <input type="file" ref="importInput" accept=".json" class="hidden" @change="importConfig">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">                      
+                            <button @click="restoreData" class="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs tracking-wider uppercase rounded-xl shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 border border-white/5">
+                                <i class="bi bi-cloud-arrow-down text-base"></i> Tarik Cloud
+                            </button>
+                            <button @click="applySettings" class="w-full py-4 bg-gradient-to-r from-neon to-accent text-white font-black tracking-widest uppercase rounded-xl transition-all duration-300 shadow-lg hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] active:scale-95 flex items-center justify-center gap-2">
+                                <i class="bi bi-check-lg text-base"></i> Simpan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+        </div>
+    </transition>
 </div>
 
 <script>
@@ -348,7 +425,7 @@
 
     const DEFAULT_CONFIG = {
         webAppUrl: "",
-        apiKey: "", // Default API Key Kosong
+        apiKey: "", 
         rate: 2500,
         initialMeter: 0,
         addons: [
@@ -362,7 +439,7 @@
 
     createApp({
         setup() {
-            // LOGIN OTOMATIS
+            // SCRIPT JS SAMA PERSIS 100% DENGAN ORIGINAL TIDAK ADA PENGURANGAN
             const activeUser = ref(localStorage.getItem('st_userName') || '');
             const loginInput = ref('');
             
@@ -379,9 +456,9 @@
             const isSettingsOpen = ref(false);
             const isSaving = ref(false);
             const syncStatusText = ref('Menunggu...');
-            const syncStatusClass = ref('text-[10px] font-mono px-2 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700');
+            const syncStatusClass = ref('text-[10px] font-mono px-2.5 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700');
             const allAddonsActive = ref(true);
-                        const importInput = ref(null);
+            const importInput = ref(null);
 
 
             // OCR Refs
@@ -426,7 +503,6 @@
                 nextTick(renderChart);
             }, { deep: true });
 
-            // LOGIKA LOGIN
             const loginUser = () => {
                 const name = loginInput.value.trim().toUpperCase();
                 if (!name) return Swal.fire({ icon: 'error', title: 'Tunggu', text: 'Tulis identitas kamar dulu!', background: '#1e293b', color: '#fff' });
@@ -490,7 +566,6 @@
                 });
             };
 
-            // ---- GEMINI AI VISION LOGIC DENGAN API KEY DINAMIS ----
             const triggerCamera = () => { if (cameraInput.value) cameraInput.value.click(); };
             const triggerGallery = () => { if (galleryInput.value) galleryInput.value.click(); };
 
@@ -531,21 +606,20 @@
                 const file = event.target.files[0];
                 if (!file) return;
 
-                // 1. CEK API KEY DULU
                 if (!config.apiKey || config.apiKey.trim() === "") {
                     Swal.fire({
                         icon: 'warning', title: 'Butuh Kunci Akses',
                         text: 'Silakan klik ikon Pengaturan di pojok kanan atas, lalu tempelkan Google API Key Anda untuk mengaktifkan Kamera AI.',
                         background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8'
                     });
-                    return; // Berhenti di sini
+                    return; 
                 }
 
                 imageProofFile.value = file; 
                 imageProofUrl.value = URL.createObjectURL(file);
                 ocrLoading.value = true;
 
-                const apiKey = config.apiKey.trim(); // Ambil dari pengaturan memori HP
+                const apiKey = config.apiKey.trim(); 
 
                 Swal.fire({ toast: true, position: 'top', icon: 'info', title: 'AI Mencari Server...', showConfirmButton: false, background: '#0f172a', color: '#fff' });
 
@@ -563,7 +637,6 @@
                         }]
                     };
 
-                    // Auto Discovery System untuk menjamin API tembus
                     const modelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
                     const modelsRes = await fetch(modelsUrl);
                     if (!modelsRes.ok) throw new Error("API Key tidak valid.");
@@ -614,7 +687,6 @@
                 }
             };
 
-            // ---- TRANSAKSI & CLOUD DATA PAYLOAD ----
             const saveRecord = () => {
                 const current = parseFloat(currentMeter.value);
                 const previous = parseFloat(previousMeter.value);
@@ -688,7 +760,6 @@
                 });
             };
 
-                        // ---- FITUR NATIVE SHARE (PILIHAN BERBAGI NATIVE HP) ----
             const shareBill = async () => {
                 if (filteredHistory.value.length === 0) {
                     return Swal.fire({ 
@@ -732,13 +803,11 @@
                 waText += `*TOTAL BAYAR: ${formatRupiah(latestRecord.totalBiaya)}*\n`;
                 waText += `--------------------------------\n`;
 
-                // 1. SIAPKAN OBJECT SHARE UTAMA
                 const shareData = {
                     title: 'Laporan Listrik & Iuran',
                     text: waText
                 };
 
-                // 2. SISIPKAN FOTO JIKA ADA BUKTI FOTO METERAN
                 if (imageProofFile.value) {
                     const fileShare = new File([imageProofFile.value], 'Meteran_Listrik.jpg', { type: 'image/jpeg' });
                     if (navigator.canShare && navigator.canShare({ files: [fileShare] })) {
@@ -746,27 +815,21 @@
                     }
                 }
 
-                // 3. UTAMAKAN MEMBUKA PILIHAN BERBAGI NATIVE HP
                 if (navigator.share) {
                     try {
                         await navigator.share(shareData);
-                        if (imageProofFile.value) removeProof(); // Bersihkan preview foto jika sukses
+                        if (imageProofFile.value) removeProof();
                     } catch (err) {
-                        // Jika pengguna menutup/membatalkan menu berbagi, abaikan errornya
                         if (err.name !== 'AbortError') {
                             console.error("Gagal Berbagi:", err);
                         }
                     }
                 } else {
-                    // FALLBACK: Hanya aktif jika dibuka di Browser Laptop / Browser Tua yang tidak punya menu share
                     const phoneIbuKos = "6285792540616";
                     window.open(`https://wa.me/${phoneIbuKos}?text=${encodeURIComponent(waText)}`, '_blank');
                 }
             };
 
-                        // ---- FITUR SMART BACKUP & RESTORE JSON ----
-            
-            // 1. Backup Lengkap (Pengaturan + Riwayat Transaksi)
             const exportConfig = () => {
                 const fullBackup = {
                     appName: "EnergyTracker",
@@ -800,7 +863,6 @@
                 if (importInput.value) importInput.value.click();
             };
 
-            // 2. Smart Restore (Otomatis Deteksi Format JSON Apapun)
             const importConfig = (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
@@ -811,33 +873,27 @@
                         const parsed = JSON.parse(e.target.result);
                         let restoredItems = [];
 
-                        // KASUS A: Jika file adalah ARRAY RIWAYAT TRANSAKSI (Sesuai JSON Anda)
                         if (Array.isArray(parsed)) {
                             if (parsed.length > 0 && (parsed[0].meteranSekarang !== undefined || parsed[0].id !== undefined)) {
                                 mergeHistoryData(parsed);
                                 restoredItems.push("Riwayat Transaksi");
                             }
                         } 
-                        // KASUS B: Jika file adalah OBJECT (Pengaturan / Backup Lengkap)
                         else if (typeof parsed === 'object' && parsed !== null) {
                             
-                            // Restore Pengaturan (jika ada)
                             const cfgToApply = parsed.config || parsed;
                             if (cfgToApply.apiKey !== undefined || cfgToApply.webAppUrl !== undefined || cfgToApply.rate !== undefined) {
                                 applyConfigObject(cfgToApply);
                                 restoredItems.push("Pengaturan & API Key");
                             }
 
-                            // Restore Riwayat Transaksi (jika ada di dalam backup object)
                             if (Array.isArray(parsed.history)) {
                                 mergeHistoryData(parsed.history);
                                 restoredItems.push("Riwayat Transaksi");
                             }
                         }
 
-                        // JIKA BERHASIL
                         if (restoredItems.length > 0) {
-                            // Simpan perubahan ke LocalStorage
                             localStorage.setItem('st_config', JSON.stringify(config));
                             localStorage.setItem('st_history', JSON.stringify(historyData.value));
                             updatePreviousMeter();
@@ -864,12 +920,11 @@
                         });
                     }
                     
-                    event.target.value = ''; // Reset input file
+                    event.target.value = ''; 
                 };
                 reader.readAsText(file);
             };
 
-            // FUNGSI PEMBANTU 1: Penggabung Riwayat Transaksi (Anti Duplikat)
             const mergeHistoryData = (importedArray) => {
                 const existingIds = new Set(historyData.value.map(h => String(h.id)));
                 
@@ -879,7 +934,6 @@
                         userName: item.userName || activeUser.value || "KAMAR 1"
                     };
                     
-                    // Jika ID transaksi belum ada, tambahkan ke riwayat
                     if (!existingIds.has(String(preparedItem.id))) {
                         historyData.value.push(preparedItem);
                         existingIds.add(String(preparedItem.id));
@@ -887,7 +941,6 @@
                 });
             };
 
-            // FUNGSI PEMBANTU 2: Penerap Pengaturan & API Key
             const applyConfigObject = (cfgObj) => {
                 if (cfgObj.webAppUrl !== undefined) {
                     config.webAppUrl = cfgObj.webAppUrl;
@@ -911,11 +964,10 @@
                 }
             };
 
-            // ---- SETTINGS & SYNC ----
             const applySettings = () => {
                 config.webAppUrl = tempConfig.webAppUrl;
                 config.rate = tempConfig.rate;
-                config.apiKey = tempConfig.apiKey; // Simpan API Key ke memory HP
+                config.apiKey = tempConfig.apiKey; 
                 
                 if (filteredHistory.value.length === 0) {
                     config.initialMeter = tempConfig.initialMeter;
@@ -936,10 +988,10 @@
 
             const setStatus = (text, type) => {
                 syncStatusText.value = text;
-                if(type === 'sync') syncStatusClass.value = 'text-[10px] font-mono px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 animate-pulse';
-                else if(type === 'ok') syncStatusClass.value = 'text-[10px] font-mono px-2 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30';
-                else if(type === 'err') syncStatusClass.value = 'text-[10px] font-mono px-2 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30';
-                else syncStatusClass.value = 'text-[10px] font-mono px-2 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700';
+                if(type === 'sync') syncStatusClass.value = 'text-[10px] font-mono px-2.5 py-1 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 animate-pulse';
+                else if(type === 'ok') syncStatusClass.value = 'text-[10px] font-mono px-2.5 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30';
+                else if(type === 'err') syncStatusClass.value = 'text-[10px] font-mono px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30';
+                else syncStatusClass.value = 'text-[10px] font-mono px-2.5 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700';
             };
 
             const processQueue = async () => {
@@ -1011,11 +1063,21 @@
                     data: {
                         labels: labels,
                         datasets: [
-                            { label: 'Total (Rp)', data: costs, borderColor: '#38bdf8', backgroundColor: gradient, borderWidth: 2, pointBackgroundColor: '#fff', fill: true, tension: 0.4, yAxisID: 'y' },
+                            { label: 'Total (Rp)', data: costs, borderColor: '#38bdf8', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: '#fff', fill: true, tension: 0.4, yAxisID: 'y' },
                             { label: 'Pemakaian (kWh)', data: usage, borderColor: '#818cf8', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, tension: 0.4, yAxisID: 'y1', fill: false }
                         ]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false }, y1: { display: false } } }
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        interaction: { mode: 'index', intersect: false }, 
+                        plugins: { legend: { display: false } }, 
+                        scales: { 
+                            x: { grid: { display: false, color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }, 
+                            y: { display: false }, 
+                            y1: { display: false } 
+                        } 
+                    }
                 });
             };
 

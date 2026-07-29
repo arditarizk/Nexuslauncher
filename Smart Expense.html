@@ -295,7 +295,7 @@
                     <input type="url" id="settingUrl" placeholder="https://script.google.com/..." class="clean-input w-full rounded-xl px-4 py-3.5 text-sm text-slate-600 font-mono">
                     
                     <div id="tutorialCloud" class="hidden mt-3 bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                        <h4 class="text-xs font-black text-brand-600 mb-2">Setup Cloud Simpel ☁️</h4>
+                        <h4 class="text-xs font-black text-brand-600 mb-2">Setup Cloud Simpel ☁️ </h4>
                         <ol class="text-[10px] text-slate-600 space-y-2 font-medium list-decimal list-inside ml-1">
                             <li>Buka <a href="https://sheets.google.com" target="_blank" class="text-brand-500 underline font-bold">Google Sheets</a>, buat file baru.</li>
                             <li>Tulis ini di baris paling atas (Header):<br>
@@ -549,7 +549,7 @@
                 advisorIcon.innerText = '😭'; warningText.innerHTML = `<b>Ya ampun ${activeUser}, boncos!</b> Bulan ini limitnya udah habis. Puasa jajan boba dulu ya, semangat! 💪`;
             } else if (percentage >= 80) {
                 progressBar.className = 'h-full bg-yellow-300 rounded-full transition-all duration-700 ease-out relative shadow-[0_0_10px_rgba(253,224,71,0.8)]';
-                advisorIcon.innerText = '🥺'; warningText.innerHTML = `<b>Waduh ${activeUser}, dompet mulai teriak!</b> Udah mau limit nih bestie. Kurang-kurangin buka aplikasi belanja ya! 🛍️❌`;
+                advisorIcon.innerText = '🥺'; warningText.innerHTML = `<b>Waduh ${activeUser}, dompet mulai teriak!</b> Udah mau limit nih bestie. Kurang-kurangin buka aplikasi belanja ya! 🛍️ ❌`;
             } else if (percentage >= 50) {
                 progressBar.className = 'h-full bg-white/90 rounded-full transition-all duration-700 ease-out relative shadow-[0_0_10px_rgba(255,255,255,0.6)]';
                 advisorIcon.innerText = '🤔'; warningText.innerHTML = `<b>Udah setengah jalan nih ${activeUser}.</b> Mulai ngerem dikit ya pengeluarannya biar aman sampai akhir bulan! 🍜`;
@@ -605,10 +605,10 @@ Sisa: ${remaining >= 0 ? formatRupiah(remaining) : 'Over Budget ' + formatRupiah
             }
 
             waText += `
-📑 *Rincian Jajan:*
+📄 *Rincian Jajan:*
 `; 
             sortedCats.forEach(cat => { 
-                waText += `▫️ ${cat}: ${formatRupiah(categoryTotals[cat])}\n`; 
+                waText += `▪️ ${cat}: ${formatRupiah(categoryTotals[cat])}\n`; 
             });
 
             waText += `
@@ -817,10 +817,24 @@ ${topCatName} (${formatRupiah(topCatVal)})
         function formatRupiah(number) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number); }
         function alertErr(msg) { Swal.fire({ icon: 'warning', title: 'Tunggu dulu!', text: msg, confirmButtonColor: '#6366f1', customClass: { popup: 'rounded-3xl font-sans' } }); }
 
-        function copyScriptCode() {
+                function copyScriptCode() {
             const code = `function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheetName = "DataTransaksi"; 
+    var sheet = ss.getSheetByName(sheetName);
+    
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+      sheet.appendRow(["Tanggal", "Nama", "Kategori", "Nominal", "Catatan", "ID", "Waktu Input", "Dompet"]);
+      sheet.getRange("A1:H1").setFontWeight("bold").setBackground("#f3f4f6");
+      sheet.setFrozenRows(1);
+    } else if (sheet.getLastRow() === 0) {
+      sheet.appendRow(["Tanggal", "Nama", "Kategori", "Nominal", "Catatan", "ID", "Waktu Input", "Dompet"]);
+      sheet.getRange("A1:H1").setFontWeight("bold").setBackground("#f3f4f6");
+      sheet.setFrozenRows(1);
+    }
+
     var payload = JSON.parse(e.postData.contents);
     var action = payload.action || 'insert';
     var txId = payload.id;
@@ -864,7 +878,9 @@ ${topCatName} (${formatRupiah(topCatVal)})
     }
     
     return ContentService.createTextOutput(JSON.stringify({"status": "success"})).setMimeType(ContentService.MimeType.JSON);
-  } catch (error) { return ContentService.createTextOutput(JSON.stringify({"status": "error", "message": error.message})); }
+  } catch (error) { 
+    return ContentService.createTextOutput(JSON.stringify({"status": "error", "message": error.message})).setMimeType(ContentService.MimeType.JSON); 
+  }
 }`;
             const el = document.createElement('textarea');
             el.value = code;
@@ -880,6 +896,7 @@ ${topCatName} (${formatRupiah(topCatVal)})
                 customClass: { popup: 'rounded-2xl shadow-soft font-sans font-bold' }
             });
         }
+
     </script>
 </body>
 </html>
