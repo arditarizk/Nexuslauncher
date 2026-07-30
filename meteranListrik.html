@@ -1001,7 +1001,7 @@
                 method = method || 'POST';
                 if (window.self === window.top) {
                     if (method === 'GET') return fetch(url).then(r => r.text());
-                    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }).then(r => r.text());
+                    return fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }).then(() => null);
                 }
                 return new Promise((resolve, reject) => {
                     const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2);
@@ -1030,15 +1030,20 @@
                 const payloadToSend = syncQueue.value[0];
 
                 try {
-                    const rawResult = await syncViaGAS(config.webAppUrl, payloadToSend);
-                    let parsed = null;
-                    try { parsed = JSON.parse(rawResult); } catch (parseErr) { /* biarkan null kalau bukan JSON */ }
+                    // POST wajib no-cors (kalau tidak, kena blokir CORS di redirect Apps Script),
+                    // jadi kita nggak bisa baca respons langsungnya. Untuk action insert, verifikasi
+                    // ulang lewat GET (yang aman dibaca) apakah ID barusan beneran nyampe ke Sheet.
+                    await syncViaGAS(config.webAppUrl, payloadToSend);
 
-                    if (parsed && parsed.status === 'error') {
-                        throw new Error(parsed.message || 'Server GAS menolak data');
+                    if (payloadToSend.action === 'insert' && payloadToSend.id) {
+                        const verifyRaw = await syncViaGAS(config.webAppUrl, null, 'GET');
+                        const verifyData = JSON.parse(verifyRaw);
+                        const found = (verifyData.history || []).some(h => String(h.id) === String(payloadToSend.id));
+                        if (!found) {
+                            throw new Error('Data tidak ditemukan di Sheet setelah dikirim (kemungkinan doPost gagal atau deployment belum ter-update ke versi terbaru)');
+                        }
                     }
 
-                    // status 'success' atau 'duplicate_ignored' dianggap sudah terkirim, lanjut ke antrean berikutnya
                     syncQueue.value.shift(); 
                     localStorage.setItem('st_queue', JSON.stringify(syncQueue.value));
                     
