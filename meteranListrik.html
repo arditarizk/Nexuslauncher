@@ -1016,7 +1016,7 @@
                         reject(new Error('Timeout: parent portal tidak merespons'));
                     }, 10000);
                     window.addEventListener('message', handler);
-                    window.parent.postMessage({ type: 'GAS_SYNC_REQUEST', requestId, url, payload, method }, '*');
+                    window.parent.postMessage({ type: 'GAS_SYNC_REQUEST', requestId, url, payload: payload ? JSON.parse(JSON.stringify(payload)) : payload, method }, '*');
                 });
             };
 
