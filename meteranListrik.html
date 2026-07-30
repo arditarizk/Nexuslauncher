@@ -542,7 +542,19 @@
                 }
             };
 
-            const saveConfig = () => { localStorage.setItem('st_config', JSON.stringify(config)); };
+            const saveConfig = () => {
+                localStorage.setItem('st_config', JSON.stringify(config));
+                // Sinkronkan juga ke Google Sheet (tab "Config"), sebelumnya cuma tersimpan lokal
+                syncQueue.value.push({
+                    action: 'save_config',
+                    userName: activeUser.value,
+                    config: JSON.parse(JSON.stringify(config)),
+                    apiKey: config.apiKey || '',
+                    webAppUrl: config.webAppUrl || ''
+                });
+                localStorage.setItem('st_queue', JSON.stringify(syncQueue.value));
+                checkQueue();
+            };
 
             const toggleAllAddons = () => {
                 config.addons.forEach(addon => addon.active = allAddonsActive.value);
@@ -897,6 +909,14 @@
                             localStorage.setItem('st_config', JSON.stringify(config));
                             localStorage.setItem('st_history', JSON.stringify(historyData.value));
                             updatePreviousMeter();
+
+                            // Otomatis push seluruh history hasil restore ke Sheet (batch).
+                            // Backend sudah dedup by id, jadi aman kirim semua tanpa takut dobel.
+                            if (config.webAppUrl && historyData.value.length > 0) {
+                                syncQueue.value.push({ history: JSON.parse(JSON.stringify(historyData.value)) });
+                                localStorage.setItem('st_queue', JSON.stringify(syncQueue.value));
+                                checkQueue();
+                            }
                             
                             Swal.fire({ 
                                 icon: 'success', 
@@ -927,16 +947,22 @@
 
             const mergeHistoryData = (importedArray) => {
                 const existingIds = new Set(historyData.value.map(h => String(h.id)));
-                
+                // Kunci konten: user + tanggal + angka meteran sekarang. Ini nangkep duplikat
+                // yang ID-nya beda (misal satu dari input manual, satu dari sumber lain) tapi
+                // sebenarnya reading yang sama.
+                const existingKeys = new Set(historyData.value.map(h => `${h.userName}_${h.date}_${h.meteranSekarang}`));
+
                 importedArray.forEach(item => {
                     const preparedItem = {
                         ...item,
                         userName: item.userName || activeUser.value || "KAMAR 1"
                     };
-                    
-                    if (!existingIds.has(String(preparedItem.id))) {
+                    const key = `${preparedItem.userName}_${preparedItem.date}_${preparedItem.meteranSekarang}`;
+
+                    if (!existingIds.has(String(preparedItem.id)) && !existingKeys.has(key)) {
                         historyData.value.push(preparedItem);
                         existingIds.add(String(preparedItem.id));
+                        existingKeys.add(key);
                     }
                 });
             };
@@ -1068,9 +1094,19 @@
                 try {
                     const responseText = await syncViaGAS(config.webAppUrl, null, 'GET');
                     const data = JSON.parse(responseText);
-                    if (data && data.length > 0) {
-                        historyData.value = data;
+                    // doGet balikin OBJEK { history, configs }, bukan array langsung -> ambil data.history
+                    const historyFromSheet = (data && Array.isArray(data.history)) ? data.history : [];
+
+                    if (historyFromSheet.length > 0) {
+                        mergeHistoryData(historyFromSheet);
                         localStorage.setItem('st_history', JSON.stringify(historyData.value));
+
+                        // Kalau ada config tersimpan untuk user aktif, ikut ditarik juga
+                        if (data.configs && data.configs[activeUser.value]) {
+                            applyConfigObject(data.configs[activeUser.value]);
+                            localStorage.setItem('st_config', JSON.stringify(config));
+                        }
+
                         Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Data Pulih!', showConfirmButton: false, timer: 2000, background: '#0f172a', color: '#fff' });
                     } else { Swal.fire({ icon: 'info', title: 'Kosong', text: 'Tidak ada data di Google Sheet.', background: '#0f172a', color: '#fff' }); }
                 } catch (e) { Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menarik data dari Cloud.', background: '#0f172a', color: '#fff' }); } 
