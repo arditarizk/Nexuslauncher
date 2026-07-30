@@ -331,23 +331,33 @@
 
     <script>
         // Configuration
-        const CONFIG = {
-            matic: [
-                { id: 'oli_mesin', name: 'Oli Mesin', interval: 2500, icon: 'bi-droplet-fill', defaultPrice: 55000 },
-                { id: 'oli_gardan', name: 'Oli Gardan', interval: 8000, icon: 'bi-gear-wide-connected', defaultPrice: 25000 },
-                { id: 'vbelt', name: 'V-Belt (CVT)', interval: 24000, icon: 'bi-nut-fill', defaultPrice: 160000 },
-                { id: 'kampas_rem', name: 'Kampas Rem', interval: 12000, icon: 'bi-record-circle', defaultPrice: 45000 },
-                { id: 'busi', name: 'Busi', interval: 8000, icon: 'bi-lightning-charge-fill', defaultPrice: 30000 },
-                { id: 'filter_udara', name: 'Filter Udara', interval: 15000, icon: 'bi-wind', defaultPrice: 50000 }
-            ],
-            moped: [
-                { id: 'oli_mesin', name: 'Oli Mesin', interval: 2500, icon: 'bi-droplet-fill', defaultPrice: 55000 },
-                { id: 'rantai', name: 'Rantai & Gir', interval: 15000, icon: 'bi-link-45deg', defaultPrice: 180000 },
-                { id: 'kampas_rem', name: 'Kampas Rem', interval: 12000, icon: 'bi-record-circle', defaultPrice: 45000 },
-                { id: 'busi', name: 'Busi', interval: 8000, icon: 'bi-lightning-charge-fill', defaultPrice: 30000 },
-                { id: 'filter_udara', name: 'Filter Udara', interval: 15000, icon: 'bi-wind', defaultPrice: 50000 }
-            ]
-        };
+                // Configuration Terlengkap
+        const CONFIG = {
+            matic: [
+                { id: 'oli_mesin', name: 'Oli Mesin', interval: 2500, icon: 'bi-droplet-fill', defaultPrice: 55000 },
+                { id: 'oli_gardan', name: 'Oli Gardan', interval: 8000, icon: 'bi-gear-wide-connected', defaultPrice: 25000 },
+                { id: 'vbelt', name: 'V-Belt (CVT)', interval: 24000, icon: 'bi-nut-fill', defaultPrice: 160000 },
+                { id: 'roller_cvt', name: 'Roller CVT', interval: 15000, icon: 'bi-circle-fill', defaultPrice: 75000 },
+                { id: 'kampas_ganda', name: 'Kampas Ganda', interval: 24000, icon: 'bi-disc-fill', defaultPrice: 180000 },
+                { id: 'air_radiator', name: 'Air Radiator', interval: 12000, icon: 'bi-thermometer-snow', defaultPrice: 35000 },
+                { id: 'kampas_rem_depan', name: 'Kampas Rem Depan', interval: 12000, icon: 'bi-record-circle', defaultPrice: 45000 },
+                { id: 'kampas_rem_blk', name: 'Kampas Rem Blk', interval: 15000, icon: 'bi-record-circle-fill', defaultPrice: 50000 },
+                { id: 'busi', name: 'Busi', interval: 8000, icon: 'bi-lightning-charge-fill', defaultPrice: 30000 },
+                { id: 'filter_udara', name: 'Filter Udara', interval: 15000, icon: 'bi-wind', defaultPrice: 50000 },
+                { id: 'minyak_rem', name: 'Minyak Rem', interval: 24000, icon: 'bi-moisture', defaultPrice: 30000 }
+            ],
+            moped: [
+                { id: 'oli_mesin', name: 'Oli Mesin', interval: 2500, icon: 'bi-droplet-fill', defaultPrice: 55000 },
+                { id: 'rantai_gir', name: 'Rantai & Gir Set', interval: 15000, icon: 'bi-link-45deg', defaultPrice: 180000 },
+                { id: 'kampas_kopling', name: 'Kampas Kopling', interval: 20000, icon: 'bi-layers-fill', defaultPrice: 150000 },
+                { id: 'kampas_rem_depan', name: 'Kampas Rem Depan', interval: 12000, icon: 'bi-record-circle', defaultPrice: 45000 },
+                { id: 'kampas_rem_blk', name: 'Kampas Rem Blk', interval: 12000, icon: 'bi-record-circle-fill', defaultPrice: 45000 },
+                { id: 'busi', name: 'Busi', interval: 8000, icon: 'bi-lightning-charge-fill', defaultPrice: 30000 },
+                { id: 'filter_udara', name: 'Filter Udara', interval: 15000, icon: 'bi-wind', defaultPrice: 50000 },
+                { id: 'minyak_rem', name: 'Minyak Rem', interval: 24000, icon: 'bi-moisture', defaultPrice: 30000 }
+            ]
+        };
+
 
         const ROAST_MESSAGES = [
             "Oli mesin udah berubah jadi aspal hitam, yakin masih mau dipaksa gas?!",
