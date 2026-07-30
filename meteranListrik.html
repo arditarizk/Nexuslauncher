@@ -1,1129 +1,1138 @@
-﻿<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Energy Tracker AI</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Outfit', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
-                    colors: { dark: '#0f172a', neon: '#38bdf8', accent: '#818cf8' },
-                    animation: {
-                        'gradient-x': 'gradient-x 15s ease infinite',
-                    },
-                    keyframes: {
-                        'gradient-x': {
-                            '0%, 100%': { 'background-position': '0% 50%' },
-                            '50%': { 'background-position': '100% 50%' },
-                        }
-                    }
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Energy Tracker AI</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { dark: '#0f172a', neon: '#38bdf8', accent: '#818cf8' },
+                    animation: {
+                        'gradient-x': 'gradient-x 15s ease infinite',
+                    },
+                    keyframes: {
+                        'gradient-x': {
+                            '0%, 100%': { 'background-position': '0% 50%' },
+                            '50%': { 'background-position': '100% 50%' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0f172a;
+            background-image: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.15), transparent 40%), 
+                              radial-gradient(circle at 85% 30%, rgba(129, 140, 248, 0.15), transparent 40%);
+            background-size: 200% 200%;
+            animation: gradient-x 15s ease infinite;
+            background-attachment: fixed;
+            color: #e2e8f0;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+        
+        /* Glassmorphism & Hover Effects */
+        .glass-card { 
+            background: rgba(30, 41, 59, 0.65); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 1.5rem; 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            border-color: rgba(56, 189, 248, 0.3);
+            box-shadow: 0 10px 30px -10px rgba(56, 189, 248, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .input-glow:focus { outline: none; box-shadow: 0 0 20px rgba(56, 189, 248, 0.4); border-color: #38bdf8; }
+        
+        /* Custom Scrollbar for Desktop */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.6); }
+
+        .chart-container { position: relative; height: 280px; width: 100%; }
+        [v-cloak] { display: none; }
+        
+        /* VUE TRANSITIONS */
+        .page-enter-active, .page-leave-active { transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        .page-enter-from, .page-leave-to { opacity: 0; transform: translateY(20px) scale(0.98); }
+        
+        .modal-enter-active, .modal-leave-active { transition: opacity 0.3s ease; }
+        .modal-enter-from, .modal-leave-to { opacity: 0; }
+        .modal-slide-enter-active, .modal-slide-leave-active { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .modal-slide-enter-from, .modal-slide-leave-to { transform: translateY(100%); }
+
+        .list-enter-active, .list-leave-active { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .list-enter-from, .list-leave-to { opacity: 0; transform: translateX(-30px) scale(0.95); }
+        .list-leave-active { position: absolute; }
+    </style>
+</head>
+<body class="min-h-screen pb-6">
+
+<div id="app" v-cloak>
+    
+    <!-- LOGIN SCREEN -->
+    <transition name="page" mode="out-in">
+        <div v-if="!activeUser" class="fixed inset-0 z-50 bg-dark/95 flex flex-col items-center justify-center px-4 backdrop-blur-md">
+            <div class="text-center mb-8">
+                <div class="w-24 h-24 mx-auto bg-gradient-to-tr from-neon to-accent rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(56,189,248,0.5)] transform hover:scale-110 transition-transform duration-500">
+                    <i class="bi bi-lightning-charge-fill text-5xl text-white"></i>
+                </div>
+                <h1 class="text-4xl font-black text-white mt-6 tracking-tighter uppercase italic drop-shadow-lg">Energy <span class="text-neon">Tracker</span></h1>
+                <p class="text-accent text-xs font-mono tracking-widest mt-2 uppercase">Powered by AI Vision</p>
+            </div>
+            <div class="w-full max-w-sm glass-card p-8 border border-neon/30 shadow-[0_0_30px_rgba(56,189,248,0.2)]">
+                <label class="text-[10px] text-gray-400 font-bold uppercase block mb-3 text-center tracking-widest">IDENTITAS KAMAR / PENGGUNA</label>
+                <input type="text" v-model="loginInput" @keypress.enter="loginUser" placeholder="Misal: Kamar 1, Ardita..." class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-4 text-center font-bold text-lg mb-6 uppercase text-neon placeholder:text-gray-700 input-glow transition-all duration-300">
+                <button @click="loginUser" class="w-full py-4 bg-gradient-to-r from-neon to-accent hover:from-accent hover:to-neon text-white font-black uppercase tracking-widest rounded-xl transition-all duration-500 shadow-lg hover:shadow-neon/50 active:scale-95">
+                    MULAI MENCATAT
+                </button>
+            </div>
+        </div>
+
+        <!-- MAIN DASHBOARD -->
+        <div v-else class="w-full">
+            <!-- Header (Responsive Width) -->
+            <header class="fixed top-0 w-full z-40 bg-dark/80 backdrop-blur-xl border-b border-white/10 shadow-lg">
+                <div class="max-w-6xl mx-auto px-4 lg:px-8 h-20 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="bi bi-lightning-charge-fill text-yellow-400 text-2xl drop-shadow-[0_0_12px_rgba(250,204,21,0.8)]"></i>
+                        <div class="leading-none mt-1">
+                            <h1 class="font-bold text-xl tracking-wide leading-tight">Energy<span class="text-neon font-light">Tracker</span></h1>
+                            <p class="text-[9px] text-accent font-mono tracking-widest uppercase mt-0.5">By Ardita</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-[10px] text-gray-400 uppercase font-bold">Kamar</p>
+                            <p class="text-sm font-bold text-white uppercase truncate max-w-[120px]">{{ activeUser }}</p>
+                        </div>
+                        <span :class="syncStatusClass" class="transition-colors duration-300">{{ syncStatusText }}</span>
+                        <button @click="isSettingsOpen = true" class="p-2.5 rounded-full bg-white/5 hover:bg-white/15 transition-all text-gray-300 hover:text-white border border-transparent hover:border-white/20 active:scale-95">
+                            <i class="bi bi-gear-fill text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Responsive Grid Content -->
+            <main class="max-w-6xl mx-auto px-4 lg:px-8 pt-28 pb-12">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                    
+                    <!-- KOLOM KIRI (Input & Kontrol) -->
+                    <div class="lg:col-span-5 space-y-6">
+                        
+                        <!-- Main Display Card -->
+                        <div class="glass-card p-6 lg:p-8 relative overflow-hidden border-t-4 border-t-neon">
+                            <div class="absolute top-0 right-0 p-4 opacity-5 transform rotate-12 scale-150 transition-transform duration-700 hover:scale-110"><i class="bi bi-cpu text-8xl"></i></div>
+                            
+                            <div class="text-center mb-8 relative z-10">
+                                <p class="text-gray-400 text-xs uppercase tracking-widest mb-2 font-semibold">Total Estimasi Tagihan</p>
+                                <h2 class="text-4xl lg:text-5xl font-mono font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] transition-all">{{ formatRupiah(computedTotal) }}</h2>
+                                <div class="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                                    <i class="bi bi-lightning-fill text-yellow-400 text-sm animate-pulse"></i>
+                                    <span class="text-sm font-mono text-neon font-bold">{{ computedUsage }} kWh</span>
+                                </div>
+                            </div>
+
+                            <!-- Input Section -->
+                            <div class="space-y-5 relative z-10">
+                                <div>
+                                    <label class="text-xs text-gray-400 ml-1 font-semibold flex justify-between mb-2">
+                                        Meteran Saat Ini (Akhir)
+                                        <span v-if="ocrLoading" class="text-neon animate-pulse"><i class="bi bi-robot"></i> Menganalisis AI...</span>
+                                    </label>
+                                    <div class="relative flex items-center gap-3">
+                                        <input type="number" v-model.number="currentMeter" placeholder="0000" 
+                                            :class="{'border-red-500 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]': currentMeter > 0 && currentMeter <= previousMeter}"
+                                            class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-5 text-3xl font-mono text-white input-glow transition-all duration-300">
+                                        
+                                        <!-- Pilihan Tombol -->
+                                        <div class="flex gap-2 shrink-0">
+                                            <button @click="triggerCamera" :disabled="ocrLoading" class="h-[76px] w-[60px] bg-neon/10 border border-neon/30 rounded-xl text-neon flex flex-col items-center justify-center hover:bg-neon hover:text-white transition-all duration-300 hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] active:scale-90 disabled:opacity-50">
+                                                <i v-if="ocrLoading" class="bi bi-arrow-repeat animate-spin text-2xl"></i>
+                                                <i v-else class="bi bi-camera-fill text-2xl"></i>
+                                                <span class="text-[9px] font-bold mt-1.5 uppercase tracking-wider">Foto</span>
+                                            </button>
+                                            
+                                            <button @click="triggerGallery" :disabled="ocrLoading" class="h-[76px] w-[60px] bg-accent/10 border border-accent/30 rounded-xl text-accent flex flex-col items-center justify-center hover:bg-accent hover:text-white transition-all duration-300 hover:shadow-[0_0_20px_rgba(129,140,248,0.4)] active:scale-90 disabled:opacity-50">
+                                                <i v-if="ocrLoading" class="bi bi-arrow-repeat animate-spin text-2xl"></i>
+                                                <i v-else class="bi bi-images text-2xl"></i>
+                                                <span class="text-[9px] font-bold mt-1.5 uppercase tracking-wider">Galeri</span>
+                                            </button>
+                                        </div>
+
+                                        <input type="file" ref="cameraInput" accept="image/*" capture="environment" class="hidden" @change="processImageWithAI">
+                                        <input type="file" ref="galleryInput" accept="image/*" class="hidden" @change="processImageWithAI">
+                                    </div>
+                                    
+                                    <transition name="page">
+                                        <div v-if="imageProofUrl" class="mt-4 relative w-full h-36 rounded-xl overflow-hidden border border-neon/50 shadow-[0_0_20px_rgba(56,189,248,0.2)]">
+                                            <img :src="imageProofUrl" class="w-full h-full object-cover opacity-90 transition-transform duration-700 hover:scale-110" />
+                                            <div class="absolute inset-0 bg-gradient-to-t from-dark/95 via-dark/40 to-transparent flex flex-col justify-end p-3">
+                                                <p class="text-[11px] text-neon font-mono font-bold"><i class="bi bi-check-circle-fill"></i> Bukti Siap Dikirim Ke WA</p>
+                                            </div>
+                                            <button @click="removeProof" class="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white rounded-full h-8 w-8 flex items-center justify-center backdrop-blur-md transition-all duration-300 hover:rotate-90">
+                                                <i class="bi bi-x text-xl"></i>
+                                            </button>
+                                        </div>
+                                    </transition>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-xs text-gray-400 ml-1 font-semibold">Meteran Lalu</label>
+                                        <input type="number" v-model.number="previousMeter" readonly 
+                                            class="w-full mt-1.5 bg-dark/30 border border-gray-700/50 rounded-xl px-4 py-3.5 text-sm font-mono text-gray-500 cursor-not-allowed">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-400 ml-1 font-semibold">Tgl Pencatatan</label>
+                                        <input type="date" v-model="recordDate" 
+                                            class="w-full mt-1.5 bg-dark/50 border border-gray-600 rounded-xl px-4 py-3.5 text-sm text-gray-200 focus:border-neon focus:ring-1 focus:ring-neon outline-none transition-all duration-300">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Add-ons (Toppings) -->
+                        <div class="glass-card p-6">
+                            <div class="flex justify-between items-center mb-5 border-b border-white/10 pb-3">
+                                <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                    <i class="bi bi-receipt text-accent"></i> Biaya Tambahan
+                                </h3>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[11px] text-gray-400 uppercase font-bold">Pilih Semua</span>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" v-model="allAddonsActive" @change="toggleAllAddons" class="sr-only peer">
+                                        <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all duration-300 peer-checked:bg-neon shadow-inner"></div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <div v-for="(addon, index) in config.addons" :key="addon.id" class="flex items-center justify-between p-3.5 rounded-xl bg-dark/40 border border-white/5 hover:border-white/20 hover:bg-white/5 transition-all duration-300 group">
+                                    <div class="flex items-center gap-3 w-full">
+                                        <div class="relative flex items-center">
+                                            <input type="checkbox" v-model="addon.active" @change="saveConfig" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-500 transition-all checked:border-neon checked:bg-neon checked:shadow-[0_0_10px_rgba(56,189,248,0.5)]">
+                                            <i class="bi bi-check text-white absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity"></i>
+                                        </div>
+                                        <span class="text-sm text-gray-300 font-bold select-none cursor-pointer flex-1 uppercase tracking-wide group-hover:text-white transition-colors" @click="addon.active = !addon.active; saveConfig()">{{ addon.name }}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-mono font-bold text-gray-400 select-none bg-dark/80 px-2.5 py-1.5 rounded-lg border border-gray-700 group-hover:border-gray-500 transition-colors">{{ formatRupiah(addon.price) }}</span>
+                                            <button @click="editAddonPrice(index)" class="text-gray-500 hover:text-neon transition-colors p-2 bg-white/5 rounded-lg hover:bg-neon/10 active:scale-90">
+                                                <i class="bi bi-pencil-square text-sm"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <button @click="saveRecord" :disabled="isSaving" class="glass-card p-5 flex items-center justify-center gap-3 bg-neon/10 hover:bg-neon/20 border-neon/30 hover:border-neon/60 transition-all duration-300 group active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(56,189,248,0.15)] hover:shadow-[0_0_30px_rgba(56,189,248,0.3)]">
+                                <i :class="isSaving ? 'bi-cpu animate-spin' : 'bi-cloud-arrow-up-fill'" class="bi text-neon group-hover:text-white text-xl transition-colors"></i>
+                                <span class="text-sm lg:text-base font-black text-neon group-hover:text-white transition-colors uppercase tracking-wider">{{ isSaving ? 'SYNCING...' : 'SIMPAN' }}</span>
+                            </button>
+                            <button @click="shareBill" class="glass-card p-5 flex items-center justify-center gap-3 bg-green-500/10 hover:bg-green-500/20 border-green-500/30 hover:border-green-500/60 transition-all duration-300 group active:scale-95 shadow-[0_0_20px_rgba(34,197,94,0.15)] hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+                                <i class="bi bi-whatsapp text-green-400 group-hover:text-white text-xl transition-colors"></i>
+                                <span class="text-sm lg:text-base font-black text-green-400 group-hover:text-white transition-colors uppercase tracking-wider">KIRIM WA</span>
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- KOLOM KANAN (Statistik & Riwayat) -->
+                    <div class="lg:col-span-7 space-y-6 flex flex-col">
+                        
+                        <!-- Chart Section -->
+                        <div class="glass-card p-6 lg:p-8 flex-shrink-0">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-sm lg:text-base font-bold text-white uppercase tracking-wider flex items-center"><i class="bi bi-graph-up-arrow text-accent mr-2 text-lg"></i> Grafik Pemakaian Listrik</h3>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="usageChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- History Detail Section -->
+                        <div class="glass-card p-6 lg:p-8 flex-grow flex flex-col">
+                            <div class="flex flex-col mb-5 border-b border-white/10 pb-4">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="text-sm lg:text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                        <i class="bi bi-list-ul text-neon text-lg"></i> Log Tagihan Terakhir
+                                    </h3>
+                                    <button @click="clearHistory" class="text-[10px] lg:text-xs bg-red-500/10 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition-all duration-300 font-bold uppercase active:scale-90">
+                                        <i class="bi bi-trash"></i> Reset Data
+                                    </button>
+                                </div>
+                                <p class="text-[10px] text-gray-500 font-mono mt-2">Data difilter untuk entitas: <span class="text-neon font-bold ml-1 bg-neon/10 px-2 py-0.5 rounded">{{ activeUser }}</span></p>
+                            </div>
+                            
+                            <div class="space-y-4 overflow-y-auto max-h-[500px] pr-2 relative">
+                                <transition name="page">
+                                    <div v-if="filteredHistory.length === 0" class="p-8 border-2 border-dashed border-gray-700/50 text-center rounded-2xl bg-dark/30">
+                                        <i class="bi bi-inbox text-4xl text-gray-600 mb-3 block"></i>
+                                        <p class="text-sm text-gray-400 font-mono uppercase tracking-widest">Belum ada riwayat tagihan.</p>
+                                    </div>
+                                </transition>
+                                
+                                <transition-group name="list" tag="div" class="space-y-3 relative">
+                                    <div v-for="tx in reversedHistory" :key="tx.id" class="flex items-center justify-between bg-dark/40 border border-white/5 p-4 lg:p-5 rounded-2xl hover:border-gray-500 hover:bg-white/5 transition-all duration-300 group">
+                                        <div>
+                                            <p class="text-xs lg:text-sm text-white font-bold uppercase tracking-widest mb-1.5"><i class="bi bi-calendar-check text-neon mr-1.5"></i> {{ formatDate(tx.date) }}</p>
+                                            <p class="text-[11px] lg:text-xs text-gray-400 font-mono flex items-center gap-2">
+                                                <span class="bg-dark/80 px-2 py-1 rounded border border-gray-700">{{ tx.meteranLalu }}</span>
+                                                <i class="bi bi-arrow-right text-gray-600"></i> 
+                                                <span class="bg-dark/80 px-2 py-1 rounded border border-gray-700">{{ tx.meteranSekarang }}</span>
+                                                <span class="text-neon font-bold ml-2 bg-neon/10 px-2 py-1 rounded">{{ tx.pemakaian }} kWh</span>
+                                            </p>
+                                        </div>
+                                        <div class="flex flex-col items-end">
+                                            <span class="text-base lg:text-lg font-mono font-black text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.3)]">{{ formatRupiah(tx.totalBiaya) }}</span>
+                                            <button @click="deleteRecord(tx.id)" class="text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-all duration-300 p-2 rounded-lg mt-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100" title="Hapus Data Ini">
+                                                <i class="bi bi-trash-fill text-sm"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </transition-group>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </transition>
+
+    <!-- Settings Modal dengan Animasi Canggih -->
+    <transition name="modal">
+        <div v-if="isSettingsOpen" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
+            <!-- Overlay -->
+            <div class="absolute inset-0 bg-dark/90 backdrop-blur-md transition-opacity" @click="closeSettings"></div>
+            
+            <!-- Modal Content -->
+            <transition name="modal-slide" appear>
+                <div v-if="isSettingsOpen" class="relative w-full max-w-lg glass-card !rounded-b-none sm:!rounded-3xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto bg-slate-900 border border-neon/30 shadow-[0_-10px_50px_rgba(56,189,248,0.15)] z-10">
+                    
+                    <div class="flex justify-between items-center mb-6 sticky top-0 bg-slate-900/90 backdrop-blur pb-4 z-20 border-b border-white/10">
+                        <h3 class="text-xl font-black text-white uppercase tracking-tight"><i class="bi bi-sliders text-neon mr-2"></i> Pengaturan Sistem</h3>
+                        <button @click="closeSettings" class="p-2.5 rounded-full bg-white/5 hover:bg-red-500/20 hover:text-red-400 transition-colors border border-white/10 group active:scale-90">
+                            <i class="bi bi-x-lg text-white group-hover:text-red-400 transition-colors"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-6 relative z-10">
+                        
+                        <!-- Manajemen User -->
+                        <div class="bg-dark/60 p-5 rounded-2xl border border-white/5 flex justify-between items-center shadow-inner hover:border-white/10 transition-colors">
+                            <div>
+                                <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">Login Saat Ini:</p>
+                                <span class="text-base text-neon font-black uppercase">{{ activeUser }}</span>
+                            </div>
+                            <button @click="logoutUser" class="text-xs bg-red-500/10 text-red-400 border border-red-500/30 px-5 py-2.5 rounded-xl uppercase font-bold hover:bg-red-500 hover:text-white transition-all duration-300 shadow-lg active:scale-95 flex items-center gap-2">
+                                <i class="bi bi-box-arrow-right"></i> LOGOUT
+                            </button>
+                        </div>
+
+                        <!-- PENGATURAN API KEY -->
+                        <div class="bg-neon/5 border border-neon/20 p-5 rounded-2xl transition-all duration-300 hover:border-neon/40 hover:bg-neon/10">
+                            <label class="block text-[11px] text-neon font-bold uppercase tracking-wider mb-3">Google Gemini API Key (Vision AI)</label>
+                            <div class="relative">
+                                <input type="password" v-model="tempConfig.apiKey" placeholder="Tempel AIzaSy..." class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-3.5 text-sm text-white focus:border-neon focus:ring-1 focus:ring-neon outline-none font-mono transition-all">
+                            </div>
+                            <p class="text-[10px] text-gray-400 mt-2.5 leading-relaxed">Kunci aman disimpan di penyimpanan lokal HP Anda. Dibutuhkan untuk membaca meteran via Foto.</p>
+                        </div>
+
+                        <!-- Tarif Dasar -->
+                        <div>
+                            <label class="block text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-2">Tarif Listrik per kWh</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-mono bg-dark/50 px-2 py-1 rounded">Rp</span>
+                                <input type="number" v-model.number="tempConfig.rate" class="w-full bg-dark/60 border border-gray-600 rounded-xl pl-16 pr-4 py-3.5 text-white focus:border-neon outline-none font-mono transition-all">
+                            </div>
+                        </div>
+
+                        <!-- Set Awal Meteran -->
+                        <transition name="page">
+                            <div v-if="filteredHistory.length === 0" class="bg-dark/40 p-5 rounded-2xl border-2 border-dashed border-gray-600 hover:border-gray-400 transition-colors">
+                                <label class="block text-sm text-neon mb-1.5 font-bold">Set Meteran Awal Bulan</label>
+                                <p class="text-[10px] text-gray-400 mb-4 leading-relaxed">Riwayat akun ini masih kosong. Silakan masukkan angka meteran bulan lalu sebagai patokan awal.</p>
+                                <input type="number" v-model.number="tempConfig.initialMeter" class="w-full bg-dark border border-gray-600 rounded-xl px-4 py-3.5 text-white focus:border-neon outline-none font-mono font-bold text-lg" placeholder="00000">
+                            </div>
+                        </transition>
+
+                        <!-- URL API Google Sheets -->
+                        <div>
+                            <label class="block text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-2 flex items-center gap-2"><i class="bi bi-cloud-arrow-up text-accent"></i> API Cloud Sync (G-Sheets)</label>
+                            <div class="relative">
+                                <input type="url" v-model="tempConfig.webAppUrl" placeholder="https://script.google.com/..." class="w-full bg-dark/60 border border-gray-600 rounded-xl px-4 py-3.5 text-sm text-white focus:border-neon outline-none font-mono transition-all" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <!-- BACKUP & RESTORE LOKAL -->
+                        <div class="bg-dark/40 p-5 rounded-2xl border border-white/5 shadow-inner">
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-4 text-center">Manajemen Data Offline</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button @click="exportConfig" class="w-full py-3 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/30 font-bold text-xs uppercase rounded-xl transition-all duration-300 flex items-center justify-center gap-2 active:scale-95">
+                                    <i class="bi bi-download text-base"></i> Backup
+                                </button>
+                                <button @click="triggerImport" class="w-full py-3 bg-purple-500/10 hover:bg-purple-500 text-purple-400 hover:text-white border border-purple-500/30 font-bold text-xs uppercase rounded-xl transition-all duration-300 flex items-center justify-center gap-2 active:scale-95">
+                                    <i class="bi bi-upload text-base"></i> Restore
+                                </button>
+                                <input type="file" ref="importInput" accept=".json" class="hidden" @change="importConfig">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">                      
+                            <button @click="restoreData" class="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs tracking-wider uppercase rounded-xl shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 border border-white/5">
+                                <i class="bi bi-cloud-arrow-down text-base"></i> Tarik Cloud
+                            </button>
+                            <button @click="applySettings" class="w-full py-4 bg-gradient-to-r from-neon to-accent text-white font-black tracking-widest uppercase rounded-xl transition-all duration-300 shadow-lg hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] active:scale-95 flex items-center justify-center gap-2">
+                                <i class="bi bi-check-lg text-base"></i> Simpan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+        </div>
+    </transition>
+</div>
+
+<script>
+    const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
+
+    const DEFAULT_CONFIG = {
+        webAppUrl: "",
+        apiKey: "", 
+        rate: 2500,
+        initialMeter: 0,
+        addons: [
+            { id: 'kos', name: 'Biaya Kos', price: 350000, active: true },
+            { id: 'wifi', name: 'Internet / WiFi', price: 100000, active: false },
+            { id: 'sampah', name: 'Iuran Sampah', price: 5000, active: true },
+            { id: 'rt', name: 'Iuran RT', price: 10000, active: true },
+            { id: 'lain', name: 'Lain-lain', price: 10000, active: true }
+        ]
+    };
+
+    createApp({
+        setup() {
+            // SCRIPT JS SAMA PERSIS 100% DENGAN ORIGINAL TIDAK ADA PENGURANGAN
+            const activeUser = ref(localStorage.getItem('st_userName') || '');
+            const loginInput = ref('');
+            
+            const config = reactive(JSON.parse(localStorage.getItem('st_config')) || JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
+            const tempConfig = reactive({...config});
+            
+            const historyData = ref(JSON.parse(localStorage.getItem('st_history')) || []);
+            const syncQueue = ref(JSON.parse(localStorage.getItem('st_queue')) || []);
+            
+            const currentMeter = ref(null);
+            const previousMeter = ref(0);
+            const recordDate = ref(new Date().toISOString().split('T')[0]);
+            
+            const isSettingsOpen = ref(false);
+            const isSaving = ref(false);
+            const syncStatusText = ref('Menunggu...');
+            const syncStatusClass = ref('text-[10px] font-mono px-2.5 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700');
+            const allAddonsActive = ref(true);
+            const importInput = ref(null);
+
+
+            // OCR Refs
+            const cameraInput = ref(null);
+            const galleryInput = ref(null);
+            const imageProofUrl = ref(null);
+            const imageProofFile = ref(null);
+            const ocrLoading = ref(false);
+
+            let chartInstance = null;
+            let isSyncingProcess = false;
+
+            const filteredHistory = computed(() => {
+                return historyData.value
+                    .filter(tx => tx.userName === activeUser.value)
+                    .sort((a, b) => {
+                        if (a.date !== b.date) return new Date(a.date) - new Date(b.date);
+                        return a.id > b.id ? 1 : -1;
+                    });
+            });
+
+            const reversedHistory = computed(() => [...filteredHistory.value].reverse());
+
+            const computedUsage = computed(() => {
+                const c = parseFloat(currentMeter.value) || 0;
+                const p = parseFloat(previousMeter.value) || 0;
+                return Math.max(0, c - p);
+            });
+
+            const computedTotal = computed(() => {
+                let total = computedUsage.value * config.rate;
+                config.addons.forEach(addon => { if (addon.active) total += addon.price; });
+                return total;
+            });
+
+            watch(() => config.addons, () => {
+                allAddonsActive.value = config.addons.every(a => a.active);
+            }, { deep: true });
+
+            watch(filteredHistory, () => {
+                updatePreviousMeter();
+                nextTick(renderChart);
+            }, { deep: true });
+
+            const loginUser = () => {
+                const name = loginInput.value.trim().toUpperCase();
+                if (!name) return Swal.fire({ icon: 'error', title: 'Tunggu', text: 'Tulis identitas kamar dulu!', background: '#1e293b', color: '#fff' });
+                activeUser.value = name;
+                localStorage.setItem('st_userName', activeUser.value);
+                initDashboard();
+            };
+
+            const logoutUser = () => {
+                Swal.fire({
+                    title: 'Keluar Akun?', text: "Anda akan diminta memasukkan nama lagi.", icon: 'warning',
+                    showCancelButton: true, confirmButtonText: 'Ya, Keluar', cancelButtonText: 'Batal',
+                    background: '#0f172a', color: '#fff'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        activeUser.value = '';
+                        loginInput.value = '';
+                        localStorage.removeItem('st_userName');
+                        isSettingsOpen.value = false;
+                    }
+                });
+            };
+
+            const initDashboard = () => {
+                updatePreviousMeter();
+                allAddonsActive.value = config.addons.every(a => a.active);
+                nextTick(renderChart);
+                checkQueue();
+            };
+
+            const updatePreviousMeter = () => {
+                const hist = filteredHistory.value;
+                if (hist.length > 0) {
+                    previousMeter.value = hist[hist.length - 1].meteranSekarang;
+                } else {
+                    previousMeter.value = config.initialMeter || 0;
+                }
+            };
+
+            const saveConfig = () => { localStorage.setItem('st_config', JSON.stringify(config)); };
+
+            const toggleAllAddons = () => {
+                config.addons.forEach(addon => addon.active = allAddonsActive.value);
+                saveConfig();
+            };
+
+            const editAddonPrice = (index) => {
+                const addon = config.addons[index];
+                Swal.fire({
+                    title: `EDIT BIAYA`,
+                    html: `<span class="text-sm font-bold text-neon uppercase tracking-widest">${addon.name}</span>`,
+                    input: 'number', inputValue: addon.price,
+                    inputAttributes: { step: 100, min: 0 },
+                    showCancelButton: true, confirmButtonText: 'SIMPAN', cancelButtonText: 'BATAL',
+                    background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        config.addons[index].price = parseFloat(result.value) || 0;
+                        saveConfig();
+                    }
+                });
+            };
+
+            const triggerCamera = () => { if (cameraInput.value) cameraInput.value.click(); };
+            const triggerGallery = () => { if (galleryInput.value) galleryInput.value.click(); };
+
+            const removeProof = () => {
+                imageProofUrl.value = null;
+                imageProofFile.value = null;
+                if (cameraInput.value) cameraInput.value.value = '';
+                if (galleryInput.value) galleryInput.value.value = '';
+            };
+
+            const compressImage = (file) => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        const MAX_WIDTH = 1024;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > MAX_WIDTH) {
+                            height = Math.round((height * MAX_WIDTH) / width);
+                            width = MAX_WIDTH;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        resolve(dataUrl.split(',')[1]); 
+                    };
+                    img.src = URL.createObjectURL(file);
+                });
+            };
+
+            const processImageWithAI = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                if (!config.apiKey || config.apiKey.trim() === "") {
+                    Swal.fire({
+                        icon: 'warning', title: 'Butuh Kunci Akses',
+                        text: 'Silakan klik ikon Pengaturan di pojok kanan atas, lalu tempelkan Google API Key Anda untuk mengaktifkan Kamera AI.',
+                        background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8'
+                    });
+                    return; 
+                }
+
+                imageProofFile.value = file; 
+                imageProofUrl.value = URL.createObjectURL(file);
+                ocrLoading.value = true;
+
+                const apiKey = config.apiKey.trim(); 
+
+                Swal.fire({ toast: true, position: 'top', icon: 'info', title: 'AI Mencari Server...', showConfirmButton: false, background: '#0f172a', color: '#fff' });
+
+                try {
+                    const base64Data = await compressImage(file);
+                    
+                    const prompt = "Perhatikan gambar meteran listrik prabayar ini. Saya HANYA butuh 5 digit angka utama. Angka utama berada di deretan kotak berwarna hitam (dari kiri ke kanan). ABAIKAN angka terakhir yang berada di kotak berwarna merah. ABAIKAN teks logo, ABAIKAN nomor seri panjang di bawah meteran, ABAIKAN lampu indikator. Jawab HANYA dengan 5 digit angka utama tersebut secara langsung tanpa spasi, tanpa titik, atau kata lain.";
+
+                    const payload = {
+                        contents: [{
+                            parts: [
+                                { text: prompt },
+                                { inlineData: { mimeType: "image/jpeg", data: base64Data } }
+                            ]
+                        }]
+                    };
+
+                    const modelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+                    const modelsRes = await fetch(modelsUrl);
+                    if (!modelsRes.ok) throw new Error("API Key tidak valid.");
+                    const modelsData = await modelsRes.json();
+
+                    const validModels = modelsData.models
+                        .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
+                        .map(m => m.name);
+                    
+                    if (validModels.length === 0) throw new Error("API Key Anda tidak punya fitur Vision.");
+
+                    let selectedModelName = validModels.find(m => m.includes("gemini-2.5-flash")) || 
+                                            validModels.find(m => m.includes("gemini-1.5-flash")) || 
+                                            validModels[0]; 
+
+                    const url = `https://generativelanguage.googleapis.com/v1beta/${selectedModelName}:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(url, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) throw new Error(result.error?.message || "Server menolak gambar.");
+
+                    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    if (responseText) {
+                        const matches = responseText.match(/\d+/g);
+                        if (matches) {
+                            const rawNumber = matches.join('');
+                            const detectedNumber = parseInt(rawNumber, 10);
+                            
+                            currentMeter.value = detectedNumber;
+                            Swal.fire({ toast: true, position: 'top', icon: 'success', title: `Ditemukan: ${detectedNumber}`, timer: 3000, showConfirmButton: false, background: '#0f172a', color: '#fff' });
+                        } else {
+                            throw new Error("AI berhasil menjawab, tetapi bingung mencari angka.");
+                        }
+                    } else {
+                        throw new Error("Respon AI kosong.");
+                    }
+
+                } catch (error) {
+                    console.error("AI Error:", error);
+                    Swal.fire({ icon: 'error', title: 'Gagal Membaca', text: `Detail: ${error.message}. Anda bisa ketik manual.`, background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8' });
+                } finally {
+                    ocrLoading.value = false;
+                }
+            };
+
+            const saveRecord = () => {
+                const current = parseFloat(currentMeter.value);
+                const previous = parseFloat(previousMeter.value);
+                
+                if (!current || current <= previous) {
+                    return Swal.fire({ icon: 'error', title: 'Data Invalid', text: 'Meteran saat ini harus lebih besar dari sebelumnya.', background: '#0f172a', color: '#fff' });
+                }
+
+                isSaving.value = true;
+
+                let activeAddons = [];
+                config.addons.forEach(addon => { if (addon.active) activeAddons.push(addon.name); });
+
+                const txId = 'ENG' + Date.now();
+                
+                const recordPayload = {
+                    action: 'insert',
+                    id: txId,
+                    timestamp: new Date().toISOString(),
+                    userName: activeUser.value,
+                    date: recordDate.value,
+                    meteranSekarang: current,
+                    meteranLalu: previous,
+                    pemakaian: computedUsage.value,
+                    totalBiaya: computedTotal.value,
+                    addons: activeAddons.join(", ")
+                };
+
+                historyData.value.push({ 
+                    id: txId, userName: activeUser.value, date: recordDate.value, meteranSekarang: current, 
+                    meteranLalu: previous, pemakaian: computedUsage.value, totalBiaya: computedTotal.value, addons: activeAddons.join(", ") 
+                });
+                localStorage.setItem('st_history', JSON.stringify(historyData.value));
+                
+                syncQueue.value.push(recordPayload);
+                localStorage.setItem('st_queue', JSON.stringify(syncQueue.value));
+
+                currentMeter.value = null;
+                
+                Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Data Tersimpan!', showConfirmButton: false, timer: 1500, background: '#0f172a', color: '#fff' });
+
+                processQueue();
+                setTimeout(() => { isSaving.value = false; }, 800);
+            };
+
+            const deleteRecord = (id) => {
+                Swal.fire({
+                    title: 'HAPUS DATA?', text: "Tagihan ini akan dihapus.",
+                    icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#334155', confirmButtonText: 'YA, HAPUS', background: '#0f172a', color: '#fff'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        historyData.value = historyData.value.filter(item => item.id !== id);
+                        localStorage.setItem('st_history', JSON.stringify(historyData.value));
+                        
+                        syncQueue.value.push({ action: 'delete', id: id });
+                        localStorage.setItem('st_queue', JSON.stringify(syncQueue.value));
+
+                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Terhapus!', showConfirmButton: false, timer: 1500, background: '#0f172a', color: '#fff' });
+                        processQueue();
+                    }
+                });
+            };
+
+            const clearHistory = () => {
+                Swal.fire({ title: 'HAPUS SEMUA DATA LOKAL?', text: `Data milik ${activeUser.value} akan dihapus dari HP ini.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#334155', confirmButtonText: 'YA, HAPUS', background: '#0f172a', color: '#fff' }).then((res) => {
+                    if (res.isConfirmed) {
+                        historyData.value = historyData.value.filter(tx => tx.userName !== activeUser.value);
+                        localStorage.setItem('st_history', JSON.stringify(historyData.value));
+                        Swal.fire({ title: 'Terhapus!', icon: 'success', background: '#0f172a', color: '#fff', timer: 1000, showConfirmButton: false });
+                    }
+                });
+            };
+
+            const shareBill = async () => {
+                if (filteredHistory.value.length === 0) {
+                    return Swal.fire({ 
+                        icon: 'warning', 
+                        title: 'Belum Ada Data', 
+                        text: 'Simpan data meteran dulu sebelum dibagikan!', 
+                        background: '#0f172a', 
+                        color: '#fff', 
+                        confirmButtonColor: '#38bdf8' 
+                    });
+                }
+
+                const latestRecord = filteredHistory.value[filteredHistory.value.length - 1];
+                const dateStr = formatDate(latestRecord.date);
+                
+                let details = "";
+                if (latestRecord.addons && latestRecord.addons.trim() !== "") {
+                    const addonsList = latestRecord.addons.split(", ");
+                    addonsList.forEach(addonName => {
+                        const matchedAddon = config.addons.find(a => a.name === addonName);
+                        if (matchedAddon) details += `- ${matchedAddon.name}: ${formatRupiah(matchedAddon.price)}\n`;
+                        else details += `- ${addonName}\n`;
+                    });
+                }
+
+                let waText = `*[ Laporan Listrik & Iuran ]*\n\n`;
+                waText += `Kamar/Penyewa : *${activeUser.value}*\n`;
+                waText += `Tanggal Laporan : ${dateStr}\n`;
+                waText += `--------------------------------\n\n`;
+                
+                waText += `*DATA METERAN:*\n`;
+                waText += `Angka Akhir : ${latestRecord.meteranSekarang}\n`;
+                waText += `Angka Awal  : ${latestRecord.meteranLalu}\n`;
+                waText += `Pemakaian   : *${latestRecord.pemakaian} kWh*\n\n`;
+
+                waText += `*RINCIAN BIAYA:*\n`;
+                waText += `- Listrik: ${formatRupiah(latestRecord.pemakaian * config.rate)}\n`;
+                waText += details;
+                
+                waText += `--------------------------------\n`;
+                waText += `*TOTAL BAYAR: ${formatRupiah(latestRecord.totalBiaya)}*\n`;
+                waText += `--------------------------------\n`;
+
+                const shareData = {
+                    title: 'Laporan Listrik & Iuran',
+                    text: waText
+                };
+
+                if (imageProofFile.value) {
+                    const fileShare = new File([imageProofFile.value], 'Meteran_Listrik.jpg', { type: 'image/jpeg' });
+                    if (navigator.canShare && navigator.canShare({ files: [fileShare] })) {
+                        shareData.files = [fileShare];
+                    }
+                }
+
+                if (navigator.share) {
+                    try {
+                        await navigator.share(shareData);
+                        if (imageProofFile.value) removeProof();
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            console.error("Gagal Berbagi:", err);
+                        }
+                    }
+                } else {
+                    const phoneIbuKos = "6285792540616";
+                    window.open(`https://wa.me/${phoneIbuKos}?text=${encodeURIComponent(waText)}`, '_blank');
+                }
+            };
+
+            const exportConfig = () => {
+                const fullBackup = {
+                    appName: "EnergyTracker",
+                    version: "2.0",
+                    exportDate: new Date().toISOString(),
+                    userName: activeUser.value,
+                    config: config,
+                    history: historyData.value
+                };
+                
+                const dataStr = JSON.stringify(fullBackup, null, 2);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `EnergyTracker_Backup_${activeUser.value || 'User'}_${recordDate.value}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                Swal.fire({ 
+                    toast: true, position: 'top', icon: 'success', 
+                    title: 'Backup Lengkap Terunduh!', showConfirmButton: false, 
+                    timer: 2000, background: '#0f172a', color: '#fff' 
+                });
+            };
+
+            const triggerImport = () => {
+                if (importInput.value) importInput.value.click();
+            };
+
+            const importConfig = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        let restoredItems = [];
+
+                        if (Array.isArray(parsed)) {
+                            if (parsed.length > 0 && (parsed[0].meteranSekarang !== undefined || parsed[0].id !== undefined)) {
+                                mergeHistoryData(parsed);
+                                restoredItems.push("Riwayat Transaksi");
+                            }
+                        } 
+                        else if (typeof parsed === 'object' && parsed !== null) {
+                            
+                            const cfgToApply = parsed.config || parsed;
+                            if (cfgToApply.apiKey !== undefined || cfgToApply.webAppUrl !== undefined || cfgToApply.rate !== undefined) {
+                                applyConfigObject(cfgToApply);
+                                restoredItems.push("Pengaturan & API Key");
+                            }
+
+                            if (Array.isArray(parsed.history)) {
+                                mergeHistoryData(parsed.history);
+                                restoredItems.push("Riwayat Transaksi");
+                            }
+                        }
+
+                        if (restoredItems.length > 0) {
+                            localStorage.setItem('st_config', JSON.stringify(config));
+                            localStorage.setItem('st_history', JSON.stringify(historyData.value));
+                            updatePreviousMeter();
+                            
+                            Swal.fire({ 
+                                icon: 'success', 
+                                title: 'Restore Berhasil!', 
+                                html: `<p class="text-xs text-gray-300">Data berhasil dipulihkan:<br><b class="text-neon">${restoredItems.join(' & ')}</b></p>`, 
+                                background: '#0f172a', 
+                                color: '#fff',
+                                confirmButtonColor: '#38bdf8'
+                            });
+                        } else {
+                            throw new Error("Format JSON tidak dikenali.");
+                        }
+
+                    } catch (err) {
+                        Swal.fire({ 
+                            icon: 'error', 
+                            title: 'Gagal Restore', 
+                            text: 'File JSON rusak atau format tidak sesuai.', 
+                            background: '#0f172a', 
+                            color: '#fff' 
+                        });
+                    }
+                    
+                    event.target.value = ''; 
+                };
+                reader.readAsText(file);
+            };
+
+            const mergeHistoryData = (importedArray) => {
+                const existingIds = new Set(historyData.value.map(h => String(h.id)));
+                
+                importedArray.forEach(item => {
+                    const preparedItem = {
+                        ...item,
+                        userName: item.userName || activeUser.value || "KAMAR 1"
+                    };
+                    
+                    if (!existingIds.has(String(preparedItem.id))) {
+                        historyData.value.push(preparedItem);
+                        existingIds.add(String(preparedItem.id));
+                    }
+                });
+            };
+
+            const applyConfigObject = (cfgObj) => {
+                if (cfgObj.webAppUrl !== undefined) {
+                    config.webAppUrl = cfgObj.webAppUrl;
+                    tempConfig.webAppUrl = cfgObj.webAppUrl;
+                }
+                if (cfgObj.apiKey !== undefined) {
+                    config.apiKey = cfgObj.apiKey;
+                    tempConfig.apiKey = cfgObj.apiKey;
+                }
+                if (cfgObj.rate !== undefined) {
+                    config.rate = cfgObj.rate;
+                    tempConfig.rate = cfgObj.rate;
+                }
+                if (cfgObj.initialMeter !== undefined) {
+                    config.initialMeter = cfgObj.initialMeter;
+                    tempConfig.initialMeter = cfgObj.initialMeter;
+                }
+                if (cfgObj.addons) {
+                    config.addons = cfgObj.addons;
+                    tempConfig.addons = cfgObj.addons;
+                }
+            };
+
+            const applySettings = () => {
+                config.webAppUrl = tempConfig.webAppUrl;
+                config.rate = tempConfig.rate;
+                config.apiKey = tempConfig.apiKey; 
+                
+                if (filteredHistory.value.length === 0) {
+                    config.initialMeter = tempConfig.initialMeter;
+                    previousMeter.value = config.initialMeter;
+                }
+                saveConfig();
+                isSettingsOpen.value = false;
+                checkQueue();
+                Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Disimpan', showConfirmButton: false, timer: 1500, background: '#0f172a', color: '#fff' });
+            };
+
+            const closeSettings = () => {
+                tempConfig.webAppUrl = config.webAppUrl;
+                tempConfig.rate = config.rate;
+                tempConfig.apiKey = config.apiKey;
+                isSettingsOpen.value = false;
+            };
+
+            const setStatus = (text, type) => {
+                syncStatusText.value = text;
+                if(type === 'sync') syncStatusClass.value = 'text-[10px] font-mono px-2.5 py-1 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 animate-pulse';
+                else if(type === 'ok') syncStatusClass.value = 'text-[10px] font-mono px-2.5 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30';
+                else if(type === 'err') syncStatusClass.value = 'text-[10px] font-mono px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30';
+                else syncStatusClass.value = 'text-[10px] font-mono px-2.5 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700';
+            };
+
+            // Kirim/ambil data dari Apps Script. Kalau app ini di-load di dalam iframe (portal
+            // Index.html), fetch langsung ke script.google.com akan diblokir browser (redirect
+            // lintas domain di dalam nested iframe). Jadi relay lewat parent window (top-level).
+            const syncViaGAS = (url, payload, method) => {
+                method = method || 'POST';
+                if (window.self === window.top) {
+                    if (method === 'GET') return fetch(url).then(r => r.text());
+                    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }).then(r => r.text());
                 }
-            }
-        }
-    </script>
-
-    <style>
-        body {
-            background-color: #0f172a;
-            background-image: radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.15), transparent 40%), 
-                              radial-gradient(circle at 85% 30%, rgba(129, 140, 248, 0.15), transparent 40%);
-            background-size: 200% 200%;
-            animation: gradient-x 15s ease infinite;
-            background-attachment: fixed;
-            color: #e2e8f0;
-            -webkit-tap-highlight-color: transparent;
-            overflow-x: hidden;
-        }
-        
-        /* Glassmorphism & Hover Effects */
-        .glass-card { 
-            background: rgba(30, 41, 59, 0.65); 
-            backdrop-filter: blur(16px); 
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-            border-radius: 1.5rem; 
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .glass-card:hover {
-            border-color: rgba(56, 189, 248, 0.3);
-            box-shadow: 0 10px 30px -10px rgba(56, 189, 248, 0.15);
-            transform: translateY(-2px);
-        }
-        
-        .input-glow:focus { outline: none; box-shadow: 0 0 20px rgba(56, 189, 248, 0.4); border-color: #38bdf8; }
-        
-        /* Custom Scrollbar for Desktop */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.6); }
-
-        .chart-container { position: relative; height: 280px; width: 100%; }
-        [v-cloak] { display: none; }
-        
-        /* VUE TRANSITIONS */
-        .page-enter-active, .page-leave-active { transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-        .page-enter-from, .page-leave-to { opacity: 0; transform: translateY(20px) scale(0.98); }
-        
-        .modal-enter-active, .modal-leave-active { transition: opacity 0.3s ease; }
-        .modal-enter-from, .modal-leave-to { opacity: 0; }
-        .modal-slide-enter-active, .modal-slide-leave-active { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        .modal-slide-enter-from, .modal-slide-leave-to { transform: translateY(100%); }
-
-        .list-enter-active, .list-leave-active { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        .list-enter-from, .list-leave-to { opacity: 0; transform: translateX(-30px) scale(0.95); }
-        .list-leave-active { position: absolute; }
-    </style>
-</head>
-<body class="min-h-screen pb-6">
-
-<div id="app" v-cloak>
-    
-    <!-- LOGIN SCREEN -->
-    <transition name="page" mode="out-in">
-        <div v-if="!activeUser" class="fixed inset-0 z-50 bg-dark/95 flex flex-col items-center justify-center px-4 backdrop-blur-md">
-            <div class="text-center mb-8">
-                <div class="w-24 h-24 mx-auto bg-gradient-to-tr from-neon to-accent rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(56,189,248,0.5)] transform hover:scale-110 transition-transform duration-500">
-                    <i class="bi bi-lightning-charge-fill text-5xl text-white"></i>
-                </div>
-                <h1 class="text-4xl font-black text-white mt-6 tracking-tighter uppercase italic drop-shadow-lg">Energy <span class="text-neon">Tracker</span></h1>
-                <p class="text-accent text-xs font-mono tracking-widest mt-2 uppercase">Powered by AI Vision</p>
-            </div>
-            <div class="w-full max-w-sm glass-card p-8 border border-neon/30 shadow-[0_0_30px_rgba(56,189,248,0.2)]">
-                <label class="text-[10px] text-gray-400 font-bold uppercase block mb-3 text-center tracking-widest">IDENTITAS KAMAR / PENGGUNA</label>
-                <input type="text" v-model="loginInput" @keypress.enter="loginUser" placeholder="Misal: Kamar 1, Ardita..." class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-4 text-center font-bold text-lg mb-6 uppercase text-neon placeholder:text-gray-700 input-glow transition-all duration-300">
-                <button @click="loginUser" class="w-full py-4 bg-gradient-to-r from-neon to-accent hover:from-accent hover:to-neon text-white font-black uppercase tracking-widest rounded-xl transition-all duration-500 shadow-lg hover:shadow-neon/50 active:scale-95">
-                    MULAI MENCATAT
-                </button>
-            </div>
-        </div>
-
-        <!-- MAIN DASHBOARD -->
-        <div v-else class="w-full">
-            <!-- Header (Responsive Width) -->
-            <header class="fixed top-0 w-full z-40 bg-dark/80 backdrop-blur-xl border-b border-white/10 shadow-lg">
-                <div class="max-w-6xl mx-auto px-4 lg:px-8 h-20 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <i class="bi bi-lightning-charge-fill text-yellow-400 text-2xl drop-shadow-[0_0_12px_rgba(250,204,21,0.8)]"></i>
-                        <div class="leading-none mt-1">
-                            <h1 class="font-bold text-xl tracking-wide leading-tight">Energy<span class="text-neon font-light">Tracker</span></h1>
-                            <p class="text-[9px] text-accent font-mono tracking-widest uppercase mt-0.5">By Ardita</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="text-right hidden sm:block">
-                            <p class="text-[10px] text-gray-400 uppercase font-bold">Kamar</p>
-                            <p class="text-sm font-bold text-white uppercase truncate max-w-[120px]">{{ activeUser }}</p>
-                        </div>
-                        <span :class="syncStatusClass" class="transition-colors duration-300">{{ syncStatusText }}</span>
-                        <button @click="isSettingsOpen = true" class="p-2.5 rounded-full bg-white/5 hover:bg-white/15 transition-all text-gray-300 hover:text-white border border-transparent hover:border-white/20 active:scale-95">
-                            <i class="bi bi-gear-fill text-xl"></i>
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Responsive Grid Content -->
-            <main class="max-w-6xl mx-auto px-4 lg:px-8 pt-28 pb-12">
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-                    
-                    <!-- KOLOM KIRI (Input & Kontrol) -->
-                    <div class="lg:col-span-5 space-y-6">
-                        
-                        <!-- Main Display Card -->
-                        <div class="glass-card p-6 lg:p-8 relative overflow-hidden border-t-4 border-t-neon">
-                            <div class="absolute top-0 right-0 p-4 opacity-5 transform rotate-12 scale-150 transition-transform duration-700 hover:scale-110"><i class="bi bi-cpu text-8xl"></i></div>
-                            
-                            <div class="text-center mb-8 relative z-10">
-                                <p class="text-gray-400 text-xs uppercase tracking-widest mb-2 font-semibold">Total Estimasi Tagihan</p>
-                                <h2 class="text-4xl lg:text-5xl font-mono font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] transition-all">{{ formatRupiah(computedTotal) }}</h2>
-                                <div class="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-                                    <i class="bi bi-lightning-fill text-yellow-400 text-sm animate-pulse"></i>
-                                    <span class="text-sm font-mono text-neon font-bold">{{ computedUsage }} kWh</span>
-                                </div>
-                            </div>
-
-                            <!-- Input Section -->
-                            <div class="space-y-5 relative z-10">
-                                <div>
-                                    <label class="text-xs text-gray-400 ml-1 font-semibold flex justify-between mb-2">
-                                        Meteran Saat Ini (Akhir)
-                                        <span v-if="ocrLoading" class="text-neon animate-pulse"><i class="bi bi-robot"></i> Menganalisis AI...</span>
-                                    </label>
-                                    <div class="relative flex items-center gap-3">
-                                        <input type="number" v-model.number="currentMeter" placeholder="0000" 
-                                            :class="{'border-red-500 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]': currentMeter > 0 && currentMeter <= previousMeter}"
-                                            class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-5 text-3xl font-mono text-white input-glow transition-all duration-300">
-                                        
-                                        <!-- Pilihan Tombol -->
-                                        <div class="flex gap-2 shrink-0">
-                                            <button @click="triggerCamera" :disabled="ocrLoading" class="h-[76px] w-[60px] bg-neon/10 border border-neon/30 rounded-xl text-neon flex flex-col items-center justify-center hover:bg-neon hover:text-white transition-all duration-300 hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] active:scale-90 disabled:opacity-50">
-                                                <i v-if="ocrLoading" class="bi bi-arrow-repeat animate-spin text-2xl"></i>
-                                                <i v-else class="bi bi-camera-fill text-2xl"></i>
-                                                <span class="text-[9px] font-bold mt-1.5 uppercase tracking-wider">Foto</span>
-                                            </button>
-                                            
-                                            <button @click="triggerGallery" :disabled="ocrLoading" class="h-[76px] w-[60px] bg-accent/10 border border-accent/30 rounded-xl text-accent flex flex-col items-center justify-center hover:bg-accent hover:text-white transition-all duration-300 hover:shadow-[0_0_20px_rgba(129,140,248,0.4)] active:scale-90 disabled:opacity-50">
-                                                <i v-if="ocrLoading" class="bi bi-arrow-repeat animate-spin text-2xl"></i>
-                                                <i v-else class="bi bi-images text-2xl"></i>
-                                                <span class="text-[9px] font-bold mt-1.5 uppercase tracking-wider">Galeri</span>
-                                            </button>
-                                        </div>
-
-                                        <input type="file" ref="cameraInput" accept="image/*" capture="environment" class="hidden" @change="processImageWithAI">
-                                        <input type="file" ref="galleryInput" accept="image/*" class="hidden" @change="processImageWithAI">
-                                    </div>
-                                    
-                                    <transition name="page">
-                                        <div v-if="imageProofUrl" class="mt-4 relative w-full h-36 rounded-xl overflow-hidden border border-neon/50 shadow-[0_0_20px_rgba(56,189,248,0.2)]">
-                                            <img :src="imageProofUrl" class="w-full h-full object-cover opacity-90 transition-transform duration-700 hover:scale-110" />
-                                            <div class="absolute inset-0 bg-gradient-to-t from-dark/95 via-dark/40 to-transparent flex flex-col justify-end p-3">
-                                                <p class="text-[11px] text-neon font-mono font-bold"><i class="bi bi-check-circle-fill"></i> Bukti Siap Dikirim Ke WA</p>
-                                            </div>
-                                            <button @click="removeProof" class="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white rounded-full h-8 w-8 flex items-center justify-center backdrop-blur-md transition-all duration-300 hover:rotate-90">
-                                                <i class="bi bi-x text-xl"></i>
-                                            </button>
-                                        </div>
-                                    </transition>
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="text-xs text-gray-400 ml-1 font-semibold">Meteran Lalu</label>
-                                        <input type="number" v-model.number="previousMeter" readonly 
-                                            class="w-full mt-1.5 bg-dark/30 border border-gray-700/50 rounded-xl px-4 py-3.5 text-sm font-mono text-gray-500 cursor-not-allowed">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs text-gray-400 ml-1 font-semibold">Tgl Pencatatan</label>
-                                        <input type="date" v-model="recordDate" 
-                                            class="w-full mt-1.5 bg-dark/50 border border-gray-600 rounded-xl px-4 py-3.5 text-sm text-gray-200 focus:border-neon focus:ring-1 focus:ring-neon outline-none transition-all duration-300">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Add-ons (Toppings) -->
-                        <div class="glass-card p-6">
-                            <div class="flex justify-between items-center mb-5 border-b border-white/10 pb-3">
-                                <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                                    <i class="bi bi-receipt text-accent"></i> Biaya Tambahan
-                                </h3>
-                                <div class="flex items-center gap-3">
-                                    <span class="text-[11px] text-gray-400 uppercase font-bold">Pilih Semua</span>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" v-model="allAddonsActive" @change="toggleAllAddons" class="sr-only peer">
-                                        <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all duration-300 peer-checked:bg-neon shadow-inner"></div>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="space-y-3">
-                                <div v-for="(addon, index) in config.addons" :key="addon.id" class="flex items-center justify-between p-3.5 rounded-xl bg-dark/40 border border-white/5 hover:border-white/20 hover:bg-white/5 transition-all duration-300 group">
-                                    <div class="flex items-center gap-3 w-full">
-                                        <div class="relative flex items-center">
-                                            <input type="checkbox" v-model="addon.active" @change="saveConfig" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-500 transition-all checked:border-neon checked:bg-neon checked:shadow-[0_0_10px_rgba(56,189,248,0.5)]">
-                                            <i class="bi bi-check text-white absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity"></i>
-                                        </div>
-                                        <span class="text-sm text-gray-300 font-bold select-none cursor-pointer flex-1 uppercase tracking-wide group-hover:text-white transition-colors" @click="addon.active = !addon.active; saveConfig()">{{ addon.name }}</span>
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-xs font-mono font-bold text-gray-400 select-none bg-dark/80 px-2.5 py-1.5 rounded-lg border border-gray-700 group-hover:border-gray-500 transition-colors">{{ formatRupiah(addon.price) }}</span>
-                                            <button @click="editAddonPrice(index)" class="text-gray-500 hover:text-neon transition-colors p-2 bg-white/5 rounded-lg hover:bg-neon/10 active:scale-90">
-                                                <i class="bi bi-pencil-square text-sm"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Actions -->
-                        <div class="grid grid-cols-2 gap-4">
-                            <button @click="saveRecord" :disabled="isSaving" class="glass-card p-5 flex items-center justify-center gap-3 bg-neon/10 hover:bg-neon/20 border-neon/30 hover:border-neon/60 transition-all duration-300 group active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(56,189,248,0.15)] hover:shadow-[0_0_30px_rgba(56,189,248,0.3)]">
-                                <i :class="isSaving ? 'bi-cpu animate-spin' : 'bi-cloud-arrow-up-fill'" class="bi text-neon group-hover:text-white text-xl transition-colors"></i>
-                                <span class="text-sm lg:text-base font-black text-neon group-hover:text-white transition-colors uppercase tracking-wider">{{ isSaving ? 'SYNCING...' : 'SIMPAN' }}</span>
-                            </button>
-                            <button @click="shareBill" class="glass-card p-5 flex items-center justify-center gap-3 bg-green-500/10 hover:bg-green-500/20 border-green-500/30 hover:border-green-500/60 transition-all duration-300 group active:scale-95 shadow-[0_0_20px_rgba(34,197,94,0.15)] hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]">
-                                <i class="bi bi-whatsapp text-green-400 group-hover:text-white text-xl transition-colors"></i>
-                                <span class="text-sm lg:text-base font-black text-green-400 group-hover:text-white transition-colors uppercase tracking-wider">KIRIM WA</span>
-                            </button>
-                        </div>
-
-                    </div>
-
-                    <!-- KOLOM KANAN (Statistik & Riwayat) -->
-                    <div class="lg:col-span-7 space-y-6 flex flex-col">
-                        
-                        <!-- Chart Section -->
-                        <div class="glass-card p-6 lg:p-8 flex-shrink-0">
-                            <div class="flex justify-between items-center mb-6">
-                                <h3 class="text-sm lg:text-base font-bold text-white uppercase tracking-wider flex items-center"><i class="bi bi-graph-up-arrow text-accent mr-2 text-lg"></i> Grafik Pemakaian Listrik</h3>
-                            </div>
-                            <div class="chart-container">
-                                <canvas id="usageChart"></canvas>
-                            </div>
-                        </div>
-
-                        <!-- History Detail Section -->
-                        <div class="glass-card p-6 lg:p-8 flex-grow flex flex-col">
-                            <div class="flex flex-col mb-5 border-b border-white/10 pb-4">
-                                <div class="flex justify-between items-center">
-                                    <h3 class="text-sm lg:text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                                        <i class="bi bi-list-ul text-neon text-lg"></i> Log Tagihan Terakhir
-                                    </h3>
-                                    <button @click="clearHistory" class="text-[10px] lg:text-xs bg-red-500/10 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition-all duration-300 font-bold uppercase active:scale-90">
-                                        <i class="bi bi-trash"></i> Reset Data
-                                    </button>
-                                </div>
-                                <p class="text-[10px] text-gray-500 font-mono mt-2">Data difilter untuk entitas: <span class="text-neon font-bold ml-1 bg-neon/10 px-2 py-0.5 rounded">{{ activeUser }}</span></p>
-                            </div>
-                            
-                            <div class="space-y-4 overflow-y-auto max-h-[500px] pr-2 relative">
-                                <transition name="page">
-                                    <div v-if="filteredHistory.length === 0" class="p-8 border-2 border-dashed border-gray-700/50 text-center rounded-2xl bg-dark/30">
-                                        <i class="bi bi-inbox text-4xl text-gray-600 mb-3 block"></i>
-                                        <p class="text-sm text-gray-400 font-mono uppercase tracking-widest">Belum ada riwayat tagihan.</p>
-                                    </div>
-                                </transition>
-                                
-                                <transition-group name="list" tag="div" class="space-y-3 relative">
-                                    <div v-for="tx in reversedHistory" :key="tx.id" class="flex items-center justify-between bg-dark/40 border border-white/5 p-4 lg:p-5 rounded-2xl hover:border-gray-500 hover:bg-white/5 transition-all duration-300 group">
-                                        <div>
-                                            <p class="text-xs lg:text-sm text-white font-bold uppercase tracking-widest mb-1.5"><i class="bi bi-calendar-check text-neon mr-1.5"></i> {{ formatDate(tx.date) }}</p>
-                                            <p class="text-[11px] lg:text-xs text-gray-400 font-mono flex items-center gap-2">
-                                                <span class="bg-dark/80 px-2 py-1 rounded border border-gray-700">{{ tx.meteranLalu }}</span>
-                                                <i class="bi bi-arrow-right text-gray-600"></i> 
-                                                <span class="bg-dark/80 px-2 py-1 rounded border border-gray-700">{{ tx.meteranSekarang }}</span>
-                                                <span class="text-neon font-bold ml-2 bg-neon/10 px-2 py-1 rounded">{{ tx.pemakaian }} kWh</span>
-                                            </p>
-                                        </div>
-                                        <div class="flex flex-col items-end">
-                                            <span class="text-base lg:text-lg font-mono font-black text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.3)]">{{ formatRupiah(tx.totalBiaya) }}</span>
-                                            <button @click="deleteRecord(tx.id)" class="text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-all duration-300 p-2 rounded-lg mt-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100" title="Hapus Data Ini">
-                                                <i class="bi bi-trash-fill text-sm"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </transition-group>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </main>
-        </div>
-    </transition>
-
-    <!-- Settings Modal dengan Animasi Canggih -->
-    <transition name="modal">
-        <div v-if="isSettingsOpen" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
-            <!-- Overlay -->
-            <div class="absolute inset-0 bg-dark/90 backdrop-blur-md transition-opacity" @click="closeSettings"></div>
-            
-            <!-- Modal Content -->
-            <transition name="modal-slide" appear>
-                <div v-if="isSettingsOpen" class="relative w-full max-w-lg glass-card !rounded-b-none sm:!rounded-3xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto bg-slate-900 border border-neon/30 shadow-[0_-10px_50px_rgba(56,189,248,0.15)] z-10">
-                    
-                    <div class="flex justify-between items-center mb-6 sticky top-0 bg-slate-900/90 backdrop-blur pb-4 z-20 border-b border-white/10">
-                        <h3 class="text-xl font-black text-white uppercase tracking-tight"><i class="bi bi-sliders text-neon mr-2"></i> Pengaturan Sistem</h3>
-                        <button @click="closeSettings" class="p-2.5 rounded-full bg-white/5 hover:bg-red-500/20 hover:text-red-400 transition-colors border border-white/10 group active:scale-90">
-                            <i class="bi bi-x-lg text-white group-hover:text-red-400 transition-colors"></i>
-                        </button>
-                    </div>
-
-                    <div class="space-y-6 relative z-10">
-                        
-                        <!-- Manajemen User -->
-                        <div class="bg-dark/60 p-5 rounded-2xl border border-white/5 flex justify-between items-center shadow-inner hover:border-white/10 transition-colors">
-                            <div>
-                                <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">Login Saat Ini:</p>
-                                <span class="text-base text-neon font-black uppercase">{{ activeUser }}</span>
-                            </div>
-                            <button @click="logoutUser" class="text-xs bg-red-500/10 text-red-400 border border-red-500/30 px-5 py-2.5 rounded-xl uppercase font-bold hover:bg-red-500 hover:text-white transition-all duration-300 shadow-lg active:scale-95 flex items-center gap-2">
-                                <i class="bi bi-box-arrow-right"></i> LOGOUT
-                            </button>
-                        </div>
-
-                        <!-- PENGATURAN API KEY -->
-                        <div class="bg-neon/5 border border-neon/20 p-5 rounded-2xl transition-all duration-300 hover:border-neon/40 hover:bg-neon/10">
-                            <label class="block text-[11px] text-neon font-bold uppercase tracking-wider mb-3">Google Gemini API Key (Vision AI)</label>
-                            <div class="relative">
-                                <input type="password" v-model="tempConfig.apiKey" placeholder="Tempel AIzaSy..." class="w-full bg-dark/80 border border-gray-600 rounded-xl px-4 py-3.5 text-sm text-white focus:border-neon focus:ring-1 focus:ring-neon outline-none font-mono transition-all">
-                            </div>
-                            <p class="text-[10px] text-gray-400 mt-2.5 leading-relaxed">Kunci aman disimpan di penyimpanan lokal HP Anda. Dibutuhkan untuk membaca meteran via Foto.</p>
-                        </div>
-
-                        <!-- Tarif Dasar -->
-                        <div>
-                            <label class="block text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-2">Tarif Listrik per kWh</label>
-                            <div class="relative">
-                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-mono bg-dark/50 px-2 py-1 rounded">Rp</span>
-                                <input type="number" v-model.number="tempConfig.rate" class="w-full bg-dark/60 border border-gray-600 rounded-xl pl-16 pr-4 py-3.5 text-white focus:border-neon outline-none font-mono transition-all">
-                            </div>
-                        </div>
-
-                        <!-- Set Awal Meteran -->
-                        <transition name="page">
-                            <div v-if="filteredHistory.length === 0" class="bg-dark/40 p-5 rounded-2xl border-2 border-dashed border-gray-600 hover:border-gray-400 transition-colors">
-                                <label class="block text-sm text-neon mb-1.5 font-bold">Set Meteran Awal Bulan</label>
-                                <p class="text-[10px] text-gray-400 mb-4 leading-relaxed">Riwayat akun ini masih kosong. Silakan masukkan angka meteran bulan lalu sebagai patokan awal.</p>
-                                <input type="number" v-model.number="tempConfig.initialMeter" class="w-full bg-dark border border-gray-600 rounded-xl px-4 py-3.5 text-white focus:border-neon outline-none font-mono font-bold text-lg" placeholder="00000">
-                            </div>
-                        </transition>
-
-                        <!-- URL API Google Sheets -->
-                        <div>
-                            <label class="block text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-2 flex items-center gap-2"><i class="bi bi-cloud-arrow-up text-accent"></i> API Cloud Sync (G-Sheets)</label>
-                            <div class="relative">
-                                <input type="url" v-model="tempConfig.webAppUrl" placeholder="https://script.google.com/..." class="w-full bg-dark/60 border border-gray-600 rounded-xl px-4 py-3.5 text-sm text-white focus:border-neon outline-none font-mono transition-all" autocomplete="off">
-                            </div>
-                        </div>
-
-                        <!-- BACKUP & RESTORE LOKAL -->
-                        <div class="bg-dark/40 p-5 rounded-2xl border border-white/5 shadow-inner">
-                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-4 text-center">Manajemen Data Offline</p>
-                            <div class="grid grid-cols-2 gap-4">
-                                <button @click="exportConfig" class="w-full py-3 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/30 font-bold text-xs uppercase rounded-xl transition-all duration-300 flex items-center justify-center gap-2 active:scale-95">
-                                    <i class="bi bi-download text-base"></i> Backup
-                                </button>
-                                <button @click="triggerImport" class="w-full py-3 bg-purple-500/10 hover:bg-purple-500 text-purple-400 hover:text-white border border-purple-500/30 font-bold text-xs uppercase rounded-xl transition-all duration-300 flex items-center justify-center gap-2 active:scale-95">
-                                    <i class="bi bi-upload text-base"></i> Restore
-                                </button>
-                                <input type="file" ref="importInput" accept=".json" class="hidden" @change="importConfig">
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">                      
-                            <button @click="restoreData" class="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs tracking-wider uppercase rounded-xl shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 border border-white/5">
-                                <i class="bi bi-cloud-arrow-down text-base"></i> Tarik Cloud
-                            </button>
-                            <button @click="applySettings" class="w-full py-4 bg-gradient-to-r from-neon to-accent text-white font-black tracking-widest uppercase rounded-xl transition-all duration-300 shadow-lg hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] active:scale-95 flex items-center justify-center gap-2">
-                                <i class="bi bi-check-lg text-base"></i> Simpan
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </transition>
-        </div>
-    </transition>
-</div>
-
-<script>
-    const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
-
-    const DEFAULT_CONFIG = {
-        webAppUrl: "",
-        apiKey: "", 
-        rate: 2500,
-        initialMeter: 0,
-        addons: [
-            { id: 'kos', name: 'Biaya Kos', price: 350000, active: true },
-            { id: 'wifi', name: 'Internet / WiFi', price: 100000, active: false },
-            { id: 'sampah', name: 'Iuran Sampah', price: 5000, active: true },
-            { id: 'rt', name: 'Iuran RT', price: 10000, active: true },
-            { id: 'lain', name: 'Lain-lain', price: 10000, active: true }
-        ]
-    };
-
-    createApp({
-        setup() {
-            // SCRIPT JS SAMA PERSIS 100% DENGAN ORIGINAL TIDAK ADA PENGURANGAN
-            const activeUser = ref(localStorage.getItem('st_userName') || '');
-            const loginInput = ref('');
-            
-            const config = reactive(JSON.parse(localStorage.getItem('st_config')) || JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
-            const tempConfig = reactive({...config});
-            
-            const historyData = ref(JSON.parse(localStorage.getItem('st_history')) || []);
-            const syncQueue = ref(JSON.parse(localStorage.getItem('st_queue')) || []);
-            
-            const currentMeter = ref(null);
-            const previousMeter = ref(0);
-            const recordDate = ref(new Date().toISOString().split('T')[0]);
-            
-            const isSettingsOpen = ref(false);
-            const isSaving = ref(false);
-            const syncStatusText = ref('Menunggu...');
-            const syncStatusClass = ref('text-[10px] font-mono px-2.5 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700');
-            const allAddonsActive = ref(true);
-            const importInput = ref(null);
-
-
-            // OCR Refs
-            const cameraInput = ref(null);
-            const galleryInput = ref(null);
-            const imageProofUrl = ref(null);
-            const imageProofFile = ref(null);
-            const ocrLoading = ref(false);
-
-            let chartInstance = null;
-            let isSyncingProcess = false;
-
-            const filteredHistory = computed(() => {
-                return historyData.value
-                    .filter(tx => tx.userName === activeUser.value)
-                    .sort((a, b) => {
-                        if (a.date !== b.date) return new Date(a.date) - new Date(b.date);
-                        return a.id > b.id ? 1 : -1;
-                    });
-            });
-
-            const reversedHistory = computed(() => [...filteredHistory.value].reverse());
-
-            const computedUsage = computed(() => {
-                const c = parseFloat(currentMeter.value) || 0;
-                const p = parseFloat(previousMeter.value) || 0;
-                return Math.max(0, c - p);
-            });
-
-            const computedTotal = computed(() => {
-                let total = computedUsage.value * config.rate;
-                config.addons.forEach(addon => { if (addon.active) total += addon.price; });
-                return total;
-            });
-
-            watch(() => config.addons, () => {
-                allAddonsActive.value = config.addons.every(a => a.active);
-            }, { deep: true });
-
-            watch(filteredHistory, () => {
-                updatePreviousMeter();
-                nextTick(renderChart);
-            }, { deep: true });
-
-            const loginUser = () => {
-                const name = loginInput.value.trim().toUpperCase();
-                if (!name) return Swal.fire({ icon: 'error', title: 'Tunggu', text: 'Tulis identitas kamar dulu!', background: '#1e293b', color: '#fff' });
-                activeUser.value = name;
-                localStorage.setItem('st_userName', activeUser.value);
-                initDashboard();
-            };
-
-            const logoutUser = () => {
-                Swal.fire({
-                    title: 'Keluar Akun?', text: "Anda akan diminta memasukkan nama lagi.", icon: 'warning',
-                    showCancelButton: true, confirmButtonText: 'Ya, Keluar', cancelButtonText: 'Batal',
-                    background: '#0f172a', color: '#fff'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        activeUser.value = '';
-                        loginInput.value = '';
-                        localStorage.removeItem('st_userName');
-                        isSettingsOpen.value = false;
+                return new Promise((resolve, reject) => {
+                    const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+                    function handler(event) {
+                        if (!event.data || event.data.type !== 'GAS_SYNC_RESPONSE' || event.data.requestId !== requestId) return;
+                        window.removeEventListener('message', handler);
+                        clearTimeout(timer);
+                        event.data.status === 'ok' ? resolve(event.data.result) : reject(new Error(event.data.error || 'Gagal sync'));
                     }
+                    const timer = setTimeout(() => {
+                        window.removeEventListener('message', handler);
+                        reject(new Error('Timeout: parent portal tidak merespons'));
+                    }, 10000);
+                    window.addEventListener('message', handler);
+                    window.parent.postMessage({ type: 'GAS_SYNC_REQUEST', requestId, url, payload, method }, '*');
                 });
             };
 
-            const initDashboard = () => {
-                updatePreviousMeter();
-                allAddonsActive.value = config.addons.every(a => a.active);
-                nextTick(renderChart);
-                checkQueue();
-            };
-
-            const updatePreviousMeter = () => {
-                const hist = filteredHistory.value;
-                if (hist.length > 0) {
-                    previousMeter.value = hist[hist.length - 1].meteranSekarang;
-                } else {
-                    previousMeter.value = config.initialMeter || 0;
-                }
-            };
-
-            const saveConfig = () => { localStorage.setItem('st_config', JSON.stringify(config)); };
-
-            const toggleAllAddons = () => {
-                config.addons.forEach(addon => addon.active = allAddonsActive.value);
-                saveConfig();
-            };
-
-            const editAddonPrice = (index) => {
-                const addon = config.addons[index];
-                Swal.fire({
-                    title: `EDIT BIAYA`,
-                    html: `<span class="text-sm font-bold text-neon uppercase tracking-widest">${addon.name}</span>`,
-                    input: 'number', inputValue: addon.price,
-                    inputAttributes: { step: 100, min: 0 },
-                    showCancelButton: true, confirmButtonText: 'SIMPAN', cancelButtonText: 'BATAL',
-                    background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        config.addons[index].price = parseFloat(result.value) || 0;
-                        saveConfig();
-                    }
-                });
-            };
-
-            const triggerCamera = () => { if (cameraInput.value) cameraInput.value.click(); };
-            const triggerGallery = () => { if (galleryInput.value) galleryInput.value.click(); };
-
-            const removeProof = () => {
-                imageProofUrl.value = null;
-                imageProofFile.value = null;
-                if (cameraInput.value) cameraInput.value.value = '';
-                if (galleryInput.value) galleryInput.value.value = '';
-            };
-
-            const compressImage = (file) => {
-                return new Promise((resolve) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        
-                        const MAX_WIDTH = 1024;
-                        let width = img.width;
-                        let height = img.height;
-
-                        if (width > MAX_WIDTH) {
-                            height = Math.round((height * MAX_WIDTH) / width);
-                            width = MAX_WIDTH;
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-                        
-                        ctx.drawImage(img, 0, 0, width, height);
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                        resolve(dataUrl.split(',')[1]); 
-                    };
-                    img.src = URL.createObjectURL(file);
-                });
-            };
-
-            const processImageWithAI = async (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                if (!config.apiKey || config.apiKey.trim() === "") {
-                    Swal.fire({
-                        icon: 'warning', title: 'Butuh Kunci Akses',
-                        text: 'Silakan klik ikon Pengaturan di pojok kanan atas, lalu tempelkan Google API Key Anda untuk mengaktifkan Kamera AI.',
-                        background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8'
-                    });
-                    return; 
-                }
-
-                imageProofFile.value = file; 
-                imageProofUrl.value = URL.createObjectURL(file);
-                ocrLoading.value = true;
-
-                const apiKey = config.apiKey.trim(); 
-
-                Swal.fire({ toast: true, position: 'top', icon: 'info', title: 'AI Mencari Server...', showConfirmButton: false, background: '#0f172a', color: '#fff' });
-
-                try {
-                    const base64Data = await compressImage(file);
-                    
-                    const prompt = "Perhatikan gambar meteran listrik prabayar ini. Saya HANYA butuh 5 digit angka utama. Angka utama berada di deretan kotak berwarna hitam (dari kiri ke kanan). ABAIKAN angka terakhir yang berada di kotak berwarna merah. ABAIKAN teks logo, ABAIKAN nomor seri panjang di bawah meteran, ABAIKAN lampu indikator. Jawab HANYA dengan 5 digit angka utama tersebut secara langsung tanpa spasi, tanpa titik, atau kata lain.";
-
-                    const payload = {
-                        contents: [{
-                            parts: [
-                                { text: prompt },
-                                { inlineData: { mimeType: "image/jpeg", data: base64Data } }
-                            ]
-                        }]
-                    };
-
-                    const modelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-                    const modelsRes = await fetch(modelsUrl);
-                    if (!modelsRes.ok) throw new Error("API Key tidak valid.");
-                    const modelsData = await modelsRes.json();
-
-                    const validModels = modelsData.models
-                        .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
-                        .map(m => m.name);
-                    
-                    if (validModels.length === 0) throw new Error("API Key Anda tidak punya fitur Vision.");
-
-                    let selectedModelName = validModels.find(m => m.includes("gemini-2.5-flash")) || 
-                                            validModels.find(m => m.includes("gemini-1.5-flash")) || 
-                                            validModels[0]; 
-
-                    const url = `https://generativelanguage.googleapis.com/v1beta/${selectedModelName}:generateContent?key=${apiKey}`;
-
-                    const response = await fetch(url, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-                    });
-
-                    const result = await response.json();
-
-                    if (!response.ok) throw new Error(result.error?.message || "Server menolak gambar.");
-
-                    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                    
-                    if (responseText) {
-                        const matches = responseText.match(/\d+/g);
-                        if (matches) {
-                            const rawNumber = matches.join('');
-                            const detectedNumber = parseInt(rawNumber, 10);
-                            
-                            currentMeter.value = detectedNumber;
-                            Swal.fire({ toast: true, position: 'top', icon: 'success', title: `Ditemukan: ${detectedNumber}`, timer: 3000, showConfirmButton: false, background: '#0f172a', color: '#fff' });
-                        } else {
-                            throw new Error("AI berhasil menjawab, tetapi bingung mencari angka.");
-                        }
-                    } else {
-                        throw new Error("Respon AI kosong.");
-                    }
-
-                } catch (error) {
-                    console.error("AI Error:", error);
-                    Swal.fire({ icon: 'error', title: 'Gagal Membaca', text: `Detail: ${error.message}. Anda bisa ketik manual.`, background: '#0f172a', color: '#fff', confirmButtonColor: '#38bdf8' });
-                } finally {
-                    ocrLoading.value = false;
-                }
-            };
-
-            const saveRecord = () => {
-                const current = parseFloat(currentMeter.value);
-                const previous = parseFloat(previousMeter.value);
-                
-                if (!current || current <= previous) {
-                    return Swal.fire({ icon: 'error', title: 'Data Invalid', text: 'Meteran saat ini harus lebih besar dari sebelumnya.', background: '#0f172a', color: '#fff' });
-                }
-
-                isSaving.value = true;
-
-                let activeAddons = [];
-                config.addons.forEach(addon => { if (addon.active) activeAddons.push(addon.name); });
-
-                const txId = 'ENG' + Date.now();
-                
-                const recordPayload = {
-                    action: 'insert',
-                    id: txId,
-                    timestamp: new Date().toISOString(),
-                    userName: activeUser.value,
-                    date: recordDate.value,
-                    meteranSekarang: current,
-                    meteranLalu: previous,
-                    pemakaian: computedUsage.value,
-                    totalBiaya: computedTotal.value,
-                    addons: activeAddons.join(", ")
-                };
-
-                historyData.value.push({ 
-                    id: txId, userName: activeUser.value, date: recordDate.value, meteranSekarang: current, 
-                    meteranLalu: previous, pemakaian: computedUsage.value, totalBiaya: computedTotal.value, addons: activeAddons.join(", ") 
-                });
-                localStorage.setItem('st_history', JSON.stringify(historyData.value));
-                
-                syncQueue.value.push(recordPayload);
-                localStorage.setItem('st_queue', JSON.stringify(syncQueue.value));
-
-                currentMeter.value = null;
-                
-                Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Data Tersimpan!', showConfirmButton: false, timer: 1500, background: '#0f172a', color: '#fff' });
-
-                processQueue();
-                setTimeout(() => { isSaving.value = false; }, 800);
-            };
-
-            const deleteRecord = (id) => {
-                Swal.fire({
-                    title: 'HAPUS DATA?', text: "Tagihan ini akan dihapus.",
-                    icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#334155', confirmButtonText: 'YA, HAPUS', background: '#0f172a', color: '#fff'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        historyData.value = historyData.value.filter(item => item.id !== id);
-                        localStorage.setItem('st_history', JSON.stringify(historyData.value));
-                        
-                        syncQueue.value.push({ action: 'delete', id: id });
-                        localStorage.setItem('st_queue', JSON.stringify(syncQueue.value));
-
-                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Terhapus!', showConfirmButton: false, timer: 1500, background: '#0f172a', color: '#fff' });
-                        processQueue();
-                    }
-                });
-            };
-
-            const clearHistory = () => {
-                Swal.fire({ title: 'HAPUS SEMUA DATA LOKAL?', text: `Data milik ${activeUser.value} akan dihapus dari HP ini.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#334155', confirmButtonText: 'YA, HAPUS', background: '#0f172a', color: '#fff' }).then((res) => {
-                    if (res.isConfirmed) {
-                        historyData.value = historyData.value.filter(tx => tx.userName !== activeUser.value);
-                        localStorage.setItem('st_history', JSON.stringify(historyData.value));
-                        Swal.fire({ title: 'Terhapus!', icon: 'success', background: '#0f172a', color: '#fff', timer: 1000, showConfirmButton: false });
-                    }
-                });
-            };
-
-            const shareBill = async () => {
-                if (filteredHistory.value.length === 0) {
-                    return Swal.fire({ 
-                        icon: 'warning', 
-                        title: 'Belum Ada Data', 
-                        text: 'Simpan data meteran dulu sebelum dibagikan!', 
-                        background: '#0f172a', 
-                        color: '#fff', 
-                        confirmButtonColor: '#38bdf8' 
-                    });
-                }
-
-                const latestRecord = filteredHistory.value[filteredHistory.value.length - 1];
-                const dateStr = formatDate(latestRecord.date);
-                
-                let details = "";
-                if (latestRecord.addons && latestRecord.addons.trim() !== "") {
-                    const addonsList = latestRecord.addons.split(", ");
-                    addonsList.forEach(addonName => {
-                        const matchedAddon = config.addons.find(a => a.name === addonName);
-                        if (matchedAddon) details += `- ${matchedAddon.name}: ${formatRupiah(matchedAddon.price)}\n`;
-                        else details += `- ${addonName}\n`;
-                    });
-                }
-
-                let waText = `*[ Laporan Listrik & Iuran ]*\n\n`;
-                waText += `Kamar/Penyewa : *${activeUser.value}*\n`;
-                waText += `Tanggal Laporan : ${dateStr}\n`;
-                waText += `--------------------------------\n\n`;
-                
-                waText += `*DATA METERAN:*\n`;
-                waText += `Angka Akhir : ${latestRecord.meteranSekarang}\n`;
-                waText += `Angka Awal  : ${latestRecord.meteranLalu}\n`;
-                waText += `Pemakaian   : *${latestRecord.pemakaian} kWh*\n\n`;
-
-                waText += `*RINCIAN BIAYA:*\n`;
-                waText += `- Listrik: ${formatRupiah(latestRecord.pemakaian * config.rate)}\n`;
-                waText += details;
-                
-                waText += `--------------------------------\n`;
-                waText += `*TOTAL BAYAR: ${formatRupiah(latestRecord.totalBiaya)}*\n`;
-                waText += `--------------------------------\n`;
-
-                const shareData = {
-                    title: 'Laporan Listrik & Iuran',
-                    text: waText
-                };
-
-                if (imageProofFile.value) {
-                    const fileShare = new File([imageProofFile.value], 'Meteran_Listrik.jpg', { type: 'image/jpeg' });
-                    if (navigator.canShare && navigator.canShare({ files: [fileShare] })) {
-                        shareData.files = [fileShare];
-                    }
-                }
-
-                if (navigator.share) {
-                    try {
-                        await navigator.share(shareData);
-                        if (imageProofFile.value) removeProof();
-                    } catch (err) {
-                        if (err.name !== 'AbortError') {
-                            console.error("Gagal Berbagi:", err);
-                        }
-                    }
-                } else {
-                    const phoneIbuKos = "6285792540616";
-                    window.open(`https://wa.me/${phoneIbuKos}?text=${encodeURIComponent(waText)}`, '_blank');
-                }
-            };
-
-            const exportConfig = () => {
-                const fullBackup = {
-                    appName: "EnergyTracker",
-                    version: "2.0",
-                    exportDate: new Date().toISOString(),
-                    userName: activeUser.value,
-                    config: config,
-                    history: historyData.value
-                };
-                
-                const dataStr = JSON.stringify(fullBackup, null, 2);
-                const blob = new Blob([dataStr], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `EnergyTracker_Backup_${activeUser.value || 'User'}_${recordDate.value}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                Swal.fire({ 
-                    toast: true, position: 'top', icon: 'success', 
-                    title: 'Backup Lengkap Terunduh!', showConfirmButton: false, 
-                    timer: 2000, background: '#0f172a', color: '#fff' 
-                });
-            };
-
-            const triggerImport = () => {
-                if (importInput.value) importInput.value.click();
-            };
-
-            const importConfig = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const parsed = JSON.parse(e.target.result);
-                        let restoredItems = [];
-
-                        if (Array.isArray(parsed)) {
-                            if (parsed.length > 0 && (parsed[0].meteranSekarang !== undefined || parsed[0].id !== undefined)) {
-                                mergeHistoryData(parsed);
-                                restoredItems.push("Riwayat Transaksi");
-                            }
-                        } 
-                        else if (typeof parsed === 'object' && parsed !== null) {
-                            
-                            const cfgToApply = parsed.config || parsed;
-                            if (cfgToApply.apiKey !== undefined || cfgToApply.webAppUrl !== undefined || cfgToApply.rate !== undefined) {
-                                applyConfigObject(cfgToApply);
-                                restoredItems.push("Pengaturan & API Key");
-                            }
-
-                            if (Array.isArray(parsed.history)) {
-                                mergeHistoryData(parsed.history);
-                                restoredItems.push("Riwayat Transaksi");
-                            }
-                        }
-
-                        if (restoredItems.length > 0) {
-                            localStorage.setItem('st_config', JSON.stringify(config));
-                            localStorage.setItem('st_history', JSON.stringify(historyData.value));
-                            updatePreviousMeter();
-                            
-                            Swal.fire({ 
-                                icon: 'success', 
-                                title: 'Restore Berhasil!', 
-                                html: `<p class="text-xs text-gray-300">Data berhasil dipulihkan:<br><b class="text-neon">${restoredItems.join(' & ')}</b></p>`, 
-                                background: '#0f172a', 
-                                color: '#fff',
-                                confirmButtonColor: '#38bdf8'
-                            });
-                        } else {
-                            throw new Error("Format JSON tidak dikenali.");
-                        }
-
-                    } catch (err) {
-                        Swal.fire({ 
-                            icon: 'error', 
-                            title: 'Gagal Restore', 
-                            text: 'File JSON rusak atau format tidak sesuai.', 
-                            background: '#0f172a', 
-                            color: '#fff' 
-                        });
-                    }
-                    
-                    event.target.value = ''; 
-                };
-                reader.readAsText(file);
-            };
-
-            const mergeHistoryData = (importedArray) => {
-                const existingIds = new Set(historyData.value.map(h => String(h.id)));
-                
-                importedArray.forEach(item => {
-                    const preparedItem = {
-                        ...item,
-                        userName: item.userName || activeUser.value || "KAMAR 1"
-                    };
-                    
-                    if (!existingIds.has(String(preparedItem.id))) {
-                        historyData.value.push(preparedItem);
-                        existingIds.add(String(preparedItem.id));
-                    }
-                });
-            };
-
-            const applyConfigObject = (cfgObj) => {
-                if (cfgObj.webAppUrl !== undefined) {
-                    config.webAppUrl = cfgObj.webAppUrl;
-                    tempConfig.webAppUrl = cfgObj.webAppUrl;
-                }
-                if (cfgObj.apiKey !== undefined) {
-                    config.apiKey = cfgObj.apiKey;
-                    tempConfig.apiKey = cfgObj.apiKey;
-                }
-                if (cfgObj.rate !== undefined) {
-                    config.rate = cfgObj.rate;
-                    tempConfig.rate = cfgObj.rate;
-                }
-                if (cfgObj.initialMeter !== undefined) {
-                    config.initialMeter = cfgObj.initialMeter;
-                    tempConfig.initialMeter = cfgObj.initialMeter;
-                }
-                if (cfgObj.addons) {
-                    config.addons = cfgObj.addons;
-                    tempConfig.addons = cfgObj.addons;
-                }
-            };
-
-            const applySettings = () => {
-                config.webAppUrl = tempConfig.webAppUrl;
-                config.rate = tempConfig.rate;
-                config.apiKey = tempConfig.apiKey; 
-                
-                if (filteredHistory.value.length === 0) {
-                    config.initialMeter = tempConfig.initialMeter;
-                    previousMeter.value = config.initialMeter;
-                }
-                saveConfig();
-                isSettingsOpen.value = false;
-                checkQueue();
-                Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Disimpan', showConfirmButton: false, timer: 1500, background: '#0f172a', color: '#fff' });
-            };
-
-            const closeSettings = () => {
-                tempConfig.webAppUrl = config.webAppUrl;
-                tempConfig.rate = config.rate;
-                tempConfig.apiKey = config.apiKey;
-                isSettingsOpen.value = false;
-            };
-
-            const setStatus = (text, type) => {
-                syncStatusText.value = text;
-                if(type === 'sync') syncStatusClass.value = 'text-[10px] font-mono px-2.5 py-1 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 animate-pulse';
-                else if(type === 'ok') syncStatusClass.value = 'text-[10px] font-mono px-2.5 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30';
-                else if(type === 'err') syncStatusClass.value = 'text-[10px] font-mono px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30';
-                else syncStatusClass.value = 'text-[10px] font-mono px-2.5 py-1 rounded-full bg-slate-800 text-gray-400 border border-slate-700';
-            };
-
-            // Kirim/ambil data dari Apps Script. Kalau app ini di-load di dalam iframe (portal
-            // Index.html), fetch langsung ke script.google.com akan diblokir browser (redirect
-            // lintas domain di dalam nested iframe). Jadi relay lewat parent window (top-level).
-            const syncViaGAS = (url, payload, method) => {
-                method = method || 'POST';
-                if (window.self === window.top) {
-                    if (method === 'GET') return fetch(url).then(r => r.text());
-                    return fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-                }
-                return new Promise((resolve, reject) => {
-                    const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-                    function handler(event) {
-                        if (!event.data || event.data.type !== 'GAS_SYNC_RESPONSE' || event.data.requestId !== requestId) return;
-                        window.removeEventListener('message', handler);
-                        clearTimeout(timer);
-                        event.data.status === 'ok' ? resolve(event.data.result) : reject(new Error(event.data.error || 'Gagal sync'));
-                    }
-                    const timer = setTimeout(() => {
-                        window.removeEventListener('message', handler);
-                        reject(new Error('Timeout: parent portal tidak merespons'));
-                    }, 10000);
-                    window.addEventListener('message', handler);
-                    window.parent.postMessage({ type: 'GAS_SYNC_REQUEST', requestId, url, payload, method }, '*');
-                });
-            };
-
-            const processQueue = async () => {
-                if (syncQueue.value.length === 0) return;
-                if (!config.webAppUrl) { setStatus('URL Kosong', 'err'); return; }
-                if (isSyncingProcess) return;
-
-                isSyncingProcess = true; setStatus('Menyinkronkan...', 'sync');
-                
-                const payloadToSend = syncQueue.value[0];
-
-                try {
-                    await syncViaGAS(config.webAppUrl, payloadToSend);
-                    syncQueue.value.shift(); 
-                    localStorage.setItem('st_queue', JSON.stringify(syncQueue.value));
-                    
-                    if (syncQueue.value.length > 0) { isSyncingProcess = false; processQueue(); } 
-                    else { setStatus('Tersimpan Cloud', 'ok'); setTimeout(() => setStatus('Terkoneksi', 'wait'), 3000); }
-                } catch (e) { 
-                    setStatus('Menunggu Sinyal', 'err'); 
-                } finally { 
-                    isSyncingProcess = false; 
-                }
-            };
-
-            const checkQueue = () => {
-                if (syncQueue.value.length > 0) processQueue();
-                else if (config.webAppUrl) setStatus('Terkoneksi', 'wait');
-                else setStatus('Cloud Off', 'err');
-            };
-
-            const restoreData = async () => {
-                if (!config.webAppUrl) return Swal.fire({ icon: 'error', title: 'Oops', text: 'URL Google Sheet belum diset!', background: '#0f172a', color: '#fff' });
-                try {
-                    const responseText = await syncViaGAS(config.webAppUrl, null, 'GET');
-                    const data = JSON.parse(responseText);
-                    if (data && data.length > 0) {
-                        historyData.value = data;
-                        localStorage.setItem('st_history', JSON.stringify(historyData.value));
-                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Data Pulih!', showConfirmButton: false, timer: 2000, background: '#0f172a', color: '#fff' });
-                    } else { Swal.fire({ icon: 'info', title: 'Kosong', text: 'Tidak ada data di Google Sheet.', background: '#0f172a', color: '#fff' }); }
-                } catch (e) { Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menarik data dari Cloud.', background: '#0f172a', color: '#fff' }); } 
-                finally { isSettingsOpen.value = false; }
-            };
-
-            const formatRupiah = (number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
-            const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
-
-            const renderChart = () => {
-                const canvas = document.getElementById('usageChart');
-                if (!canvas) return;
-                
-                const ctx = canvas.getContext('2d');
-                const hist = filteredHistory.value;
-                const labels = hist.map(d => new Date(d.date).toLocaleDateString('id-ID', { month: 'short' }));
-                const costs = hist.map(d => d.totalBiaya);
-                const usage = hist.map(d => d.pemakaian);
-
-                if (chartInstance) chartInstance.destroy();
-                if (hist.length === 0) {
-                    chartInstance = new Chart(ctx, { type: 'line', data: { labels: [''], datasets: [] }, options: { scales: { x: { display: false }, y: { display: false } } } }); return;
-                }
-
-                let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-                gradient.addColorStop(0, 'rgba(56, 189, 248, 0.5)'); gradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
-
-                chartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            { label: 'Total (Rp)', data: costs, borderColor: '#38bdf8', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: '#fff', fill: true, tension: 0.4, yAxisID: 'y' },
-                            { label: 'Pemakaian (kWh)', data: usage, borderColor: '#818cf8', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, tension: 0.4, yAxisID: 'y1', fill: false }
-                        ]
-                    },
-                    options: { 
-                        responsive: true, 
-                        maintainAspectRatio: false, 
-                        interaction: { mode: 'index', intersect: false }, 
-                        plugins: { legend: { display: false } }, 
-                        scales: { 
-                            x: { grid: { display: false, color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }, 
-                            y: { display: false }, 
-                            y1: { display: false } 
-                        } 
-                    }
-                });
-            };
-
-            onMounted(() => {
-                if (activeUser.value) initDashboard();
-            });
-
-            return {
-                activeUser, loginInput, loginUser, logoutUser,
-                config, tempConfig, isSettingsOpen, applySettings, closeSettings,
-                currentMeter, previousMeter, recordDate, 
-                computedUsage, computedTotal, formatRupiah, formatDate,
-                allAddonsActive, toggleAllAddons, editAddonPrice, saveConfig,
-                saveRecord, isSaving, deleteRecord, clearHistory, shareBill,
-                filteredHistory, reversedHistory, syncStatusText, syncStatusClass, restoreData,
-                cameraInput, galleryInput, triggerCamera, triggerGallery, processImageWithAI, imageProofUrl, removeProof, ocrLoading,
-            importInput, exportConfig, triggerImport, importConfig
-            };
-        }
-    }).mount('#app');
-</script>
-</body>
-</html>
+            const processQueue = async () => {
+                if (syncQueue.value.length === 0) return;
+                if (!config.webAppUrl) { setStatus('URL Kosong', 'err'); return; }
+                if (isSyncingProcess) return;
+
+                isSyncingProcess = true; setStatus('Menyinkronkan...', 'sync');
+                
+                const payloadToSend = syncQueue.value[0];
+
+                try {
+                    const rawResult = await syncViaGAS(config.webAppUrl, payloadToSend);
+                    let parsed = null;
+                    try { parsed = JSON.parse(rawResult); } catch (parseErr) { /* biarkan null kalau bukan JSON */ }
+
+                    if (parsed && parsed.status === 'error') {
+                        throw new Error(parsed.message || 'Server GAS menolak data');
+                    }
+
+                    // status 'success' atau 'duplicate_ignored' dianggap sudah terkirim, lanjut ke antrean berikutnya
+                    syncQueue.value.shift(); 
+                    localStorage.setItem('st_queue', JSON.stringify(syncQueue.value));
+                    
+                    if (syncQueue.value.length > 0) { isSyncingProcess = false; processQueue(); } 
+                    else { setStatus('Tersimpan Cloud', 'ok'); setTimeout(() => setStatus('Terkoneksi', 'wait'), 3000); }
+                } catch (e) { 
+                    console.error('Sync GAS gagal:', e.message);
+                    setStatus('Menunggu Sinyal', 'err'); 
+                } finally { 
+                    isSyncingProcess = false; 
+                }
+            };
+
+            const checkQueue = () => {
+                if (syncQueue.value.length > 0) processQueue();
+                else if (config.webAppUrl) setStatus('Terkoneksi', 'wait');
+                else setStatus('Cloud Off', 'err');
+            };
+
+            const restoreData = async () => {
+                if (!config.webAppUrl) return Swal.fire({ icon: 'error', title: 'Oops', text: 'URL Google Sheet belum diset!', background: '#0f172a', color: '#fff' });
+                try {
+                    const responseText = await syncViaGAS(config.webAppUrl, null, 'GET');
+                    const data = JSON.parse(responseText);
+                    if (data && data.length > 0) {
+                        historyData.value = data;
+                        localStorage.setItem('st_history', JSON.stringify(historyData.value));
+                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Data Pulih!', showConfirmButton: false, timer: 2000, background: '#0f172a', color: '#fff' });
+                    } else { Swal.fire({ icon: 'info', title: 'Kosong', text: 'Tidak ada data di Google Sheet.', background: '#0f172a', color: '#fff' }); }
+                } catch (e) { Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menarik data dari Cloud.', background: '#0f172a', color: '#fff' }); } 
+                finally { isSettingsOpen.value = false; }
+            };
+
+            const formatRupiah = (number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+            const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
+
+            const renderChart = () => {
+                const canvas = document.getElementById('usageChart');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const hist = filteredHistory.value;
+                const labels = hist.map(d => new Date(d.date).toLocaleDateString('id-ID', { month: 'short' }));
+                const costs = hist.map(d => d.totalBiaya);
+                const usage = hist.map(d => d.pemakaian);
+
+                if (chartInstance) chartInstance.destroy();
+                if (hist.length === 0) {
+                    chartInstance = new Chart(ctx, { type: 'line', data: { labels: [''], datasets: [] }, options: { scales: { x: { display: false }, y: { display: false } } } }); return;
+                }
+
+                let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, 'rgba(56, 189, 248, 0.5)'); gradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Total (Rp)', data: costs, borderColor: '#38bdf8', backgroundColor: gradient, borderWidth: 3, pointBackgroundColor: '#fff', fill: true, tension: 0.4, yAxisID: 'y' },
+                            { label: 'Pemakaian (kWh)', data: usage, borderColor: '#818cf8', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, tension: 0.4, yAxisID: 'y1', fill: false }
+                        ]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        interaction: { mode: 'index', intersect: false }, 
+                        plugins: { legend: { display: false } }, 
+                        scales: { 
+                            x: { grid: { display: false, color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }, 
+                            y: { display: false }, 
+                            y1: { display: false } 
+                        } 
+                    }
+                });
+            };
+
+            onMounted(() => {
+                if (activeUser.value) initDashboard();
+            });
+
+            return {
+                activeUser, loginInput, loginUser, logoutUser,
+                config, tempConfig, isSettingsOpen, applySettings, closeSettings,
+                currentMeter, previousMeter, recordDate, 
+                computedUsage, computedTotal, formatRupiah, formatDate,
+                allAddonsActive, toggleAllAddons, editAddonPrice, saveConfig,
+                saveRecord, isSaving, deleteRecord, clearHistory, shareBill,
+                filteredHistory, reversedHistory, syncStatusText, syncStatusClass, restoreData,
+                cameraInput, galleryInput, triggerCamera, triggerGallery, processImageWithAI, imageProofUrl, removeProof, ocrLoading,
+            importInput, exportConfig, triggerImport, importConfig
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
