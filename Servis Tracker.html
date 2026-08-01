@@ -1,785 +1,1 @@
-<!DOCTYPE html>
-<html lang="id" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Ride - Ultra Edition</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { 
-                        sans: ['Plus Jakarta Sans', 'sans-serif'], 
-                        mono: ['JetBrains Mono', 'monospace'] 
-                    },
-                    colors: { 
-                        carbon: '#09090b', 
-                        surface: '#121215', 
-                        surfaceLight: '#1e1e24',
-                        antOrange: '#f97316', 
-                        antRed: '#ef4444', 
-                        success: '#10b981', 
-                        warning: '#f59e0b'
-                    },
-                    keyframes: {
-                        fadeInUp: {
-                            '0%': { opacity: '0', transform: 'translateY(15px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' }
-                        },
-                        pulseGlow: {
-                            '0%, 100%': { boxShadow: '0 0 15px rgba(239, 68, 68, 0.4)' },
-                            '50%': { boxShadow: '0 0 25px rgba(239, 68, 68, 0.8)' }
-                        },
-                        shimmer: {
-                            '100%': { transform: 'translateX(100%)' }
-                        }
-                    },
-                    animation: {
-                        fadeInUp: 'fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                        pulseGlow: 'pulseGlow 2s infinite ease-in-out',
-                        shimmer: 'shimmer 1.5s infinite'
-                    }
-                }
-            }
-        }
-    </script>
-
-    <style>
-        body { 
-            background-color: #09090b; 
-            color: #f3f4f6; 
-            -webkit-tap-highlight-color: transparent;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.08) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(239, 68, 68, 0.05) 0px, transparent 50%);
-            background-attachment: fixed;
-        }
-
-        /* Glassmorphism Advanced */
-        .glass-card { 
-            background: rgba(18, 18, 21, 0.75); 
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-            border-radius: 20px; 
-            box-shadow: 0 20px 40px -15px rgba(0,0,0,0.6);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .glass-card:hover {
-            border-color: rgba(249, 115, 22, 0.3);
-        }
-
-        .bar-transition { 
-            transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1); 
-        }
-
-        input[type="number"]::-webkit-inner-spin-button, 
-        input[type="number"]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
-        }
-
-        .tab-active { 
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); 
-            color: white; 
-            box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
-        }
-
-        .tab-inactive { 
-            background-color: rgba(30, 30, 36, 0.6); 
-            color: #9ca3af; 
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .tab-inactive:hover {
-            color: #ffffff;
-            background-color: rgba(30, 30, 36, 0.9);
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #09090b; }
-        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #f97316; }
-    </style>
-</head>
-<body class="min-h-screen p-3 sm:p-6 lg:p-8 font-sans selection:bg-antOrange selection:text-white pb-28">
-
-    <!-- Container Utama: Responsive Max Width & Grid System -->
-    <div class="max-w-md md:max-w-4xl lg:max-w-6xl mx-auto space-y-6">
-        
-        <!-- Header & Top Action Buttons -->
-        <header class="flex justify-between items-center bg-surface/80 p-4 sm:p-5 rounded-2xl border border-white/5 backdrop-blur-md shadow-xl animate-fadeInUp">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-antOrange to-amber-500 flex items-center justify-center text-white shadow-lg shadow-antOrange/30 font-black text-xl italic">
-                    M
-                </div>
-                <div>
-                    <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter uppercase italic flex items-center gap-1">
-                        Motor<span class="text-antOrange">Ku</span>
-                        <span class="text-[10px] non-italic font-mono bg-antOrange/20 text-antOrange border border-antOrange/30 px-2 py-0.5 rounded-full uppercase tracking-wider ml-1">v2.0</span>
-                    </h1>
-                    <p class="text-[10px] sm:text-xs text-gray-400 font-mono tracking-widest uppercase">Ultra Maintenance Tracker</p>
-                </div>
-            </div>
-
-            <div class="flex gap-2 sm:gap-3">
-                <button onclick="openFakeBreakdown()" class="px-3 py-2.5 sm:px-4 bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded-xl hover:bg-amber-500/20 active:scale-95 transition-all text-xs font-bold flex items-center gap-2 shadow-lg shadow-amber-500/5">
-                    <i class="bi bi-cup-hot-fill text-sm"></i> 
-                    <span class="hidden sm:inline">Alasan</span> Mogok
-                </button>
-                <button onclick="document.getElementById('settingsModal').classList.remove('hidden')" class="p-2.5 sm:px-3.5 bg-surfaceLight border border-gray-700/60 text-white rounded-xl hover:bg-gray-800 active:scale-95 transition-all text-xs shadow-lg" title="Pengaturan">
-                    <i class="bi bi-gear-fill text-sm"></i>
-                </button>
-            </div>
-        </header>
-
-        <!-- Dynamic Grid Layout: Desktop 2 Column / Mobile 1 Column -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-            <!-- LEFT COLUMN: Input & Status Controls (7 Cols on Desktop) -->
-            <div class="lg:col-span-7 space-y-5">
-                
-                <!-- Category Tabs -->
-                <div class="grid grid-cols-2 gap-3 p-1.5 bg-surfaceLight/50 rounded-2xl border border-white/5 backdrop-blur-md">
-                    <button onclick="switchTab('matic')" id="tab-matic" class="py-3 rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 tab-active">
-                        <i class="bi bi-scooter text-lg"></i> Matic
-                    </button>
-                    <button onclick="switchTab('moped')" id="tab-moped" class="py-3 rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 tab-inactive">
-                        <i class="bi bi-bicycle text-lg"></i> Moped
-                    </button>
-                </div>
-
-                <!-- Odometer Utama Card -->
-                <div class="glass-card p-5 sm:p-6 border-t-4 border-t-antOrange relative overflow-hidden group">
-                    <div class="absolute -right-10 -bottom-10 text-white/5 text-9xl font-black font-mono select-none pointer-events-none group-hover:scale-110 transition-transform duration-500">
-                        KM
-                    </div>
-                    <label class="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-3 flex items-center justify-between">
-                        <span>Update Odometer Saat Ini</span>
-                        <span class="text-[10px] text-antOrange bg-antOrange/10 px-2 py-0.5 rounded font-mono">Live Sync</span>
-                    </label>
-                    <div class="relative">
-                        <input type="number" id="currentKM" placeholder="0" class="w-full bg-carbon/90 border-2 border-surfaceLight rounded-2xl text-4xl sm:text-5xl font-mono font-black text-white px-5 py-4 focus:border-antOrange focus:ring-4 focus:ring-antOrange/20 outline-none transition-all text-center shadow-inner tracking-wider" oninput="saveKM()">
-                        <div class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500 font-black text-lg font-mono">KM</div>
-                    </div>
-                </div>
-
-                <!-- Dashboard Status Parts Section Header -->
-                <div class="pt-2">
-                    <div class="flex justify-between items-center mb-4 px-1">
-                        <h2 class="text-base font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
-                            <i class="bi bi-activity text-antOrange animate-pulse"></i> Status Komponen
-                        </h2>
-                        <span class="text-xs text-gray-400 font-mono" id="partCountLabel">-- Part Pantau</span>
-                    </div>
-                    
-                    <!-- Dynamic Parts Container (Grid 1 Col Mobile, 2 Col Tablet+) -->
-                    <div id="partsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
-                </div>
-
-            </div>
-
-            <!-- RIGHT COLUMN: Insights, Widgets & Helpers (5 Cols on Desktop) -->
-            <div class="lg:col-span-5 space-y-5">
-                
-                <!-- PANIC BUTTON: MENDING JUAL MOTOR (Conditional) -->
-                <div id="panicBtnContainer" class="hidden animate-fadeInUp">
-                    <button onclick="triggerPanicSell()" class="w-full py-4 bg-gradient-to-r from-red-600 to-antRed hover:from-red-700 hover:to-red-600 text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-2xl shadow-xl animate-pulseGlow active:scale-95 transition-all flex items-center justify-center gap-2">
-                        <i class="bi bi-fire text-xl"></i> 3+ Part Rusak! Mending Jual Motor <i class="bi bi-arrow-right"></i>
-                    </button>
-                </div>
-
-                <!-- Savage Mekanik Ngomel Banner (Conditional) -->
-                <div id="roastContainer" class="hidden glass-card p-5 border-l-4 border-l-red-500 bg-red-950/20 animate-fadeInUp">
-                    <div class="flex items-start gap-3">
-                        <span class="text-3xl animate-bounce">🛠️</span>
-                        <div>
-                            <h4 class="text-xs font-black text-red-500 uppercase tracking-wider flex items-center gap-1">
-                                Mekanik Ngomel:
-                            </h4>
-                            <p id="roastText" class="text-xs text-gray-200 mt-1 italic font-medium leading-relaxed"></p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AI Diagnostik & Insight Section -->
-                <div id="insightContainer" class="hidden glass-card p-5 border-l-4 animate-fadeInUp">
-                    <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-                        <i class="bi bi-cpu text-antOrange text-base"></i> AI Diagnostik Ringkas
-                    </h3>
-                    <ul id="insightList" class="space-y-2 text-xs"></ul>
-                </div>
-
-                <!-- Estimasi Dompet (Budget Planner Widget) -->
-                <div id="budgetCard" class="hidden glass-card p-5 bg-gradient-to-br from-surfaceLight/80 to-carbon animate-fadeInUp">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Estimasi Dompet Servis</span>
-                            <h3 id="budgetValue" class="text-2xl font-black text-antOrange font-mono tracking-tight">Rp 0</h3>
-                        </div>
-                        <button onclick="openPriceEditor()" class="text-xs bg-carbon hover:bg-surfaceLight border border-gray-700 px-3 py-2 rounded-xl text-gray-300 hover:text-white font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow">
-                            <i class="bi bi-pencil-square text-antOrange"></i> Edit Harga
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Fuel Consumption Quick Tracker Widget -->
-                <div class="glass-card p-5 animate-fadeInUp">
-                    <div class="flex justify-between items-center mb-3">
-                        <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                            <i class="bi bi-fuel-pump-fill text-green-500 text-sm"></i> Konsumsi BBM
-                        </h3>
-                        <span id="avgFuelConsumption" class="text-xs font-mono font-bold text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20">0 KM/L</span>
-                    </div>
-                    <div class="flex gap-2">
-                        <input type="number" id="fuelLiterInput" step="0.1" placeholder="Isi Liter (misal 3.5)" class="flex-1 bg-carbon/90 border border-surfaceLight rounded-xl text-xs font-mono px-3.5 py-2.5 text-white outline-none focus:border-green-500 transition-colors">
-                        <button onclick="logFuel()" class="bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all active:scale-95 shadow-lg shadow-green-600/20 flex items-center gap-1.5 whitespace-nowrap">
-                            <i class="bi bi-plus-lg"></i> Catat
-                        </button>
-                    </div>
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    <!-- FAKE ENGINE BREAKDOWN OVERLAY (Excuses Generator) -->
-    <div id="fakeBreakdownOverlay" class="hidden fixed inset-0 bg-black/95 backdrop-blur-xl z-[9999] p-6 flex flex-col justify-between font-mono text-green-500 overflow-y-auto animate-fadeInUp">
-        <div class="space-y-6 max-w-lg mx-auto w-full pt-4">
-            <div class="border-b border-green-800/80 pb-4 flex justify-between items-center">
-                <span class="text-xs font-bold uppercase tracking-widest text-red-500 animate-pulse flex items-center gap-2">
-                    <i class="bi bi-exclamation-octagon-fill"></i> ENGINE CRITICAL OVERHEAT
-                </span>
-                <span class="text-xs text-gray-500" id="fakeTime">10:42 PM</span>
-            </div>
-            <div class="text-center py-6">
-                <i class="bi bi-exclamation-triangle-fill text-7xl text-red-600 animate-pulse inline-block mb-3"></i>
-                <h2 class="text-2xl font-black text-white uppercase tracking-wider">MOTOR MOGOK TOTAL</h2>
-                <p class="text-xs text-red-400 mt-2">Suhu Mesin > 130°C / Komponen Aus Sistem</p>
-            </div>
-            <div class="bg-gray-950/80 p-5 rounded-2xl border border-gray-800 text-xs space-y-3 text-gray-300 shadow-2xl">
-                <p class="flex justify-between"><b>Vehicle System:</b> <span id="fakeVehicleName" class="text-white font-bold">Matic System</span></p>
-                <p class="flex justify-between"><b>Odometer:</b> <span id="fakeOdoKM" class="text-white font-bold">0</span> KM</p>
-                <p class="flex justify-between"><b>Diagnostic Code:</b> <span class="text-yellow-500">ERR_CVT_BELT_FAILURE_0x88</span></p>
-                <p class="flex justify-between"><b>Status:</b> <span class="text-red-400">Menunggu Towing / Repair</span></p>
-            </div>
-            <p class="text-[11px] text-gray-500 italic text-center">Screen-capture halaman ini untuk dikirimkan ke atasan / dosen / pacar.</p>
-        </div>
-        <div class="max-w-lg mx-auto w-full pb-4">
-            <button onclick="document.getElementById('fakeBreakdownOverlay').classList.add('hidden')" class="w-full py-3.5 bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800 rounded-xl font-bold text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg">
-                Tutup Tampilan Mogok
-            </button>
-        </div>
-    </div>
-
-    <!-- Settings & Sync Modal -->
-    <div id="settingsModal" class="fixed inset-0 z-50 hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity" onclick="document.getElementById('settingsModal').classList.add('hidden')"></div>
-        <div class="relative bg-surface border-t sm:border border-antOrange/40 rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto w-full max-w-md mx-auto shadow-2xl z-10 animate-fadeInUp">
-            
-            <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
-                <h3 class="text-base font-black text-white uppercase tracking-tight flex items-center gap-2">
-                    <i class="bi bi-sliders text-antOrange"></i> Pengaturan Aplikasi
-                </h3>
-                <button onclick="document.getElementById('settingsModal').classList.add('hidden')" class="text-gray-400 hover:text-white p-1.5 transition-colors">
-                    <i class="bi bi-x-lg text-lg"></i>
-                </button>
-            </div>
-
-            <div class="space-y-5">
-                <!-- Log Riwayat Servis -->
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-2 tracking-wider">Riwayat Penggantian Part</label>
-                    <button onclick="viewServiceHistory()" class="w-full bg-carbon border border-gray-700/80 hover:border-antOrange text-white py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 active:scale-95 shadow">
-                        <i class="bi bi-clock-history text-antOrange"></i> Lihat Log Riwayat Transaksi
-                    </button>
-                </div>
-
-                <!-- Backup & Restore -->
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-2 tracking-wider">Backup & Restore (JSON)</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="backupData()" class="bg-carbon border border-gray-700/80 hover:border-antOrange text-white py-3 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5"><i class="bi bi-download text-antOrange"></i> Backup</button>
-                        <button onclick="document.getElementById('fileInput').click()" class="bg-carbon border border-gray-700/80 hover:border-antOrange text-white py-3 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5"><i class="bi bi-upload text-antOrange"></i> Restore</button>
-                        <input type="file" id="fileInput" accept=".json" class="hidden" onchange="restoreData(event)">
-                    </div>
-                </div>
-
-                <!-- Cloud Sync -->
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-2 tracking-wider">Cloud Sync (Apps Script)</label>
-                    <input type="url" id="syncUrl" placeholder="https://script.google.com/macros/s/..." class="w-full bg-carbon border border-gray-700 rounded-xl text-xs font-mono text-white px-3.5 py-3 outline-none focus:border-antOrange transition-colors mb-2">
-                    <button onclick="syncToCloud()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
-                        <i class="bi bi-cloud-arrow-up-fill"></i> Sinkronisasi Cloud
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Configuration
-                // Configuration Terlengkap
-        const CONFIG = {
-            matic: [
-                { id: 'oli_mesin', name: 'Oli Mesin', interval: 2500, icon: 'bi-droplet-fill', defaultPrice: 55000 },
-                { id: 'oli_gardan', name: 'Oli Gardan', interval: 8000, icon: 'bi-gear-wide-connected', defaultPrice: 25000 },
-                { id: 'vbelt', name: 'V-Belt (CVT)', interval: 24000, icon: 'bi-nut-fill', defaultPrice: 160000 },
-                { id: 'roller_cvt', name: 'Roller CVT', interval: 15000, icon: 'bi-circle-fill', defaultPrice: 75000 },
-                { id: 'kampas_ganda', name: 'Kampas Ganda', interval: 24000, icon: 'bi-disc-fill', defaultPrice: 180000 },
-                { id: 'air_radiator', name: 'Air Radiator', interval: 12000, icon: 'bi-thermometer-snow', defaultPrice: 35000 },
-                { id: 'kampas_rem_depan', name: 'Kampas Rem Depan', interval: 12000, icon: 'bi-record-circle', defaultPrice: 45000 },
-                { id: 'kampas_rem_blk', name: 'Kampas Rem Blk', interval: 15000, icon: 'bi-record-circle-fill', defaultPrice: 50000 },
-                { id: 'busi', name: 'Busi', interval: 8000, icon: 'bi-lightning-charge-fill', defaultPrice: 30000 },
-                { id: 'filter_udara', name: 'Filter Udara', interval: 15000, icon: 'bi-wind', defaultPrice: 50000 },
-                { id: 'minyak_rem', name: 'Minyak Rem', interval: 24000, icon: 'bi-moisture', defaultPrice: 30000 }
-            ],
-            moped: [
-                { id: 'oli_mesin', name: 'Oli Mesin', interval: 2500, icon: 'bi-droplet-fill', defaultPrice: 55000 },
-                { id: 'rantai_gir', name: 'Rantai & Gir Set', interval: 15000, icon: 'bi-link-45deg', defaultPrice: 180000 },
-                { id: 'kampas_kopling', name: 'Kampas Kopling', interval: 20000, icon: 'bi-layers-fill', defaultPrice: 150000 },
-                { id: 'kampas_rem_depan', name: 'Kampas Rem Depan', interval: 12000, icon: 'bi-record-circle', defaultPrice: 45000 },
-                { id: 'kampas_rem_blk', name: 'Kampas Rem Blk', interval: 12000, icon: 'bi-record-circle-fill', defaultPrice: 45000 },
-                { id: 'busi', name: 'Busi', interval: 8000, icon: 'bi-lightning-charge-fill', defaultPrice: 30000 },
-                { id: 'filter_udara', name: 'Filter Udara', interval: 15000, icon: 'bi-wind', defaultPrice: 50000 },
-                { id: 'minyak_rem', name: 'Minyak Rem', interval: 24000, icon: 'bi-moisture', defaultPrice: 30000 }
-            ]
-        };
-
-
-        const ROAST_MESSAGES = [
-            "Oli mesin udah berubah jadi aspal hitam, yakin masih mau dipaksa gas?!",
-            "V-Belt udah retak-retak. Nyawa cuma satu bang, putus di hutan beda cerita!",
-            "Ini motor apa museum purba? Komponennya udah aus peninggalan sejarah semua!",
-            "Rem udah tipis gitu mau ngedrift di pintu akhirat atau gimana bang?!"
-        ];
-
-        // Database Schema with Fail-safes
-        let myData = JSON.parse(localStorage.getItem('my_moto_ultra')) || {
-            activeTab: 'matic',
-            syncUrl: '',
-            fuelLogs: [],
-            serviceLogs: [],
-            prices: {
-                oli_mesin: 55000, oli_gardan: 25000, vbelt: 160000, rantai: 180000, kampas_rem: 45000, busi: 30000, filter_udara: 50000
-            },
-            matic: { currentKM: 0, baselines: {} },
-            moped: { currentKM: 0, baselines: {} }
-        };
-
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('syncUrl').value = myData.syncUrl || '';
-            switchTab(myData.activeTab);
-        });
-
-        function switchTab(tab) {
-            myData.activeTab = tab;
-            localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
-            
-            document.getElementById('tab-matic').className = `py-3 rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 ${tab === 'matic' ? 'tab-active' : 'tab-inactive'}`;
-            document.getElementById('tab-moped').className = `py-3 rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 ${tab === 'moped' ? 'tab-active' : 'tab-inactive'}`;
-            
-            document.getElementById('currentKM').value = myData[tab].currentKM || '';
-            renderDashboard();
-        }
-
-        function saveKM() {
-            const val = parseInt(document.getElementById('currentKM').value) || 0;
-            myData[myData.activeTab].currentKM = val;
-            localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
-            renderDashboard();
-        }
-
-        function renderDashboard() {
-            const tab = myData.activeTab;
-            const km = myData[tab].currentKM;
-            const parts = CONFIG[tab];
-            const container = document.getElementById('partsContainer');
-            
-            const insightBox = document.getElementById('insightContainer');
-            const insightList = document.getElementById('insightList');
-            const roastBox = document.getElementById('roastContainer');
-            const panicBox = document.getElementById('panicBtnContainer');
-            const budgetCard = document.getElementById('budgetCard');
-            const budgetValEl = document.getElementById('budgetValue');
-            const partCountLabel = document.getElementById('partCountLabel');
-
-            if (partCountLabel) partCountLabel.innerText = `${parts.length} Komponen`;
-
-            let urgents = [];
-            let warnings = [];
-            let totalEstimatedBudget = 0;
-            let severeOverdue = false;
-
-            container.innerHTML = '';
-            calculateFuelConsumption();
-
-            if(km === 0) {
-                insightBox.classList.add('hidden');
-                roastBox.classList.add('hidden');
-                panicBox.classList.add('hidden');
-                budgetCard.classList.add('hidden');
-                container.innerHTML = `<div class="col-span-full glass-card p-8 text-center text-gray-500 text-xs font-mono uppercase tracking-widest">Masukkan KM Odometer untuk melihat analisa komponen</div>`;
-                return;
-            }
-
-            parts.forEach((part, idx) => {
-                const lastKM = myData[tab].baselines[part.id] !== undefined ? myData[tab].baselines[part.id] : 0;
-                const nextKM = lastKM + part.interval;
-                const kmUsed = km - lastKM;
-                let progress = (kmUsed / part.interval) * 100;
-                let visualProgress = Math.min(Math.max(progress, 0), 100); 
-
-                let barColor = 'bg-success shadow-[0_0_10px_rgba(16,185,129,0.5)]';
-                let statusBadge = '<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">AMAN</span>';
-                let cardStyle = '';
-
-                const price = myData.prices[part.id] || part.defaultPrice;
-
-                if (kmUsed < 0) {
-                    barColor = 'bg-gray-600'; 
-                    statusBadge = '<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-gray-500/10 text-gray-400 border border-gray-500/20">KM ERROR</span>';
-                } else if (km >= nextKM) {
-                    barColor = 'bg-antRed shadow-[0_0_15px_rgba(239,68,68,0.8)] animate-pulse'; 
-                    statusBadge = '<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse">GANTI SEKARANG</span>';
-                    cardStyle = 'border border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.15)] bg-red-950/10';
-                    urgents.push(part.name);
-                    totalEstimatedBudget += price;
-                    if(km - nextKM > 300) severeOverdue = true;
-                } else if (km >= nextKM - 500) {
-                    barColor = 'bg-warning shadow-[0_0_10px_rgba(245,158,11,0.5)]'; 
-                    statusBadge = '<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">PERSIAPAN</span>';
-                    warnings.push(part.name);
-                    totalEstimatedBudget += price;
-                }
-
-                container.innerHTML += `
-                    <div class="glass-card p-4.5 relative overflow-hidden flex flex-col justify-between ${cardStyle} animate-fadeInUp" style="animation-delay: ${idx * 0.05}s">
-                        <div>
-                            <div class="flex justify-between items-start mb-3 gap-2">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="w-9 h-9 rounded-xl bg-carbon/80 border border-white/5 flex items-center justify-center text-antOrange text-base shadow-inner">
-                                        <i class="bi ${part.icon}"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="text-sm font-bold text-white tracking-wide">${part.name}</h3>
-                                        <p class="text-[10px] text-gray-400 font-mono">Batas: ${nextKM.toLocaleString('id-ID')} KM</p>
-                                    </div>
-                                </div>
-                                <div>${statusBadge}</div>
-                            </div>
-
-                            <div class="my-3">
-                                <div class="flex justify-between text-[10px] font-mono text-gray-400 mb-1">
-                                    <span>Dipakai: ${kmUsed.toLocaleString('id-ID')} KM</span>
-                                    <span>Sisa: ${Math.max(0, nextKM - km).toLocaleString('id-ID')} KM</span>
-                                </div>
-                                <div class="h-2 w-full bg-carbon/90 rounded-full overflow-hidden p-0.5 border border-white/5">
-                                    <div class="h-full ${barColor} bar-transition rounded-full" style="width: ${visualProgress}%"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-between items-center pt-2 border-t border-white/5 mt-1">
-                            <span class="text-[10px] font-mono text-gray-400">Est: <b class="text-white">Rp ${price.toLocaleString('id-ID')}</b></span>
-                            <div class="flex gap-1.5">
-                                <button onclick="editBaseline('${part.id}', '${part.name}', ${lastKM})" class="text-[10px] bg-carbon hover:bg-surfaceLight border border-gray-700 text-gray-300 hover:text-white px-2 py-1 rounded-lg transition-colors" title="Edit KM Terakhir">
-                                    <i class="bi bi-pencil-fill"></i>
-                                </button>
-                                <button onclick="triggerGachaReset('${part.id}', '${part.name}')" class="text-[10px] bg-antOrange/10 hover:bg-antOrange border border-antOrange/30 hover:border-antOrange text-antOrange hover:text-white px-2.5 py-1 rounded-lg font-bold transition-all active:scale-95 uppercase">
-                                    Reset
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-
-            // Budget Planner Display
-            if(totalEstimatedBudget > 0) {
-                budgetCard.classList.remove('hidden');
-                budgetValEl.innerText = `Rp ${totalEstimatedBudget.toLocaleString('id-ID')}`;
-            } else {
-                budgetCard.classList.add('hidden');
-            }
-
-            // Savage Mekanik Ngomel Trigger
-            if(severeOverdue) {
-                roastBox.classList.remove('hidden');
-                document.getElementById('roastText').innerText = ROAST_MESSAGES[Math.floor(Math.random() * ROAST_MESSAGES.length)];
-            } else {
-                roastBox.classList.add('hidden');
-            }
-
-            // Panic Button Trigger (3+ Urgent Parts)
-            if(urgents.length >= 3) {
-                panicBox.classList.remove('hidden');
-            } else {
-                panicBox.classList.add('hidden');
-            }
-
-            // AI Insights
-            insightBox.classList.remove('hidden');
-            insightBox.classList.remove('border-antRed', 'border-warning', 'border-success');
-            insightList.innerHTML = '';
-
-            if (urgents.length > 0) {
-                insightBox.classList.add('border-antRed');
-                insightList.innerHTML += `<li class="text-antRed font-bold flex items-center gap-1.5"><i class="bi bi-exclamation-triangle-fill"></i> URGENT: Segera ganti <b>${urgents.join(', ')}</b>!</li>`;
-            }
-            if (warnings.length > 0) {
-                if(urgents.length === 0) insightBox.classList.add('border-warning');
-                insightList.innerHTML += `<li class="text-warning flex items-center gap-1.5"><i class="bi bi-exclamation-circle-fill"></i> PERSIAPAN: Siapkan budget untuk <b>${warnings.join(', ')}</b>.</li>`;
-            }
-            if (urgents.length === 0 && warnings.length === 0) {
-                insightBox.classList.add('border-success');
-                insightList.innerHTML += `<li class="text-success flex items-center gap-1.5"><i class="bi bi-check-circle-fill"></i> Motor dalam kondisi prima, siap gasspol!</li>`;
-            }
-        }
-
-        // --- GACHA MEKANIK RESET SYSTEM ---
-        function triggerGachaReset(partId, partName) {
-            const tab = myData.activeTab;
-            const km = myData[tab].currentKM;
-            if(km <= 0) return;
-
-            const rand = Math.random();
-            let rank = 'R';
-            let title = 'Servis Standar Tokcer!';
-            let desc = 'Part berhasil diganti tanpa kendala.';
-            let icon = '🛠️';
-
-            if(rand > 0.9) {
-                rank = 'SSR 🌟';
-                title = 'Mekanik Sepuh Mode Sempurna!';
-                desc = 'Setelan karbu/CVT presisi banget, motor mendadak ngacir berasa baru!';
-                icon = '👑';
-            } else if(rand > 0.6) {
-                rank = 'SR ✨';
-                title = 'Dapet Bonus Cuci Motor!';
-                desc = 'Ganti part lancar dan dapet diskon koin mekanik.';
-                icon = '🧼';
-            } else if(rand < 0.2) {
-                rank = 'ZONK ⚠️';
-                title = 'Baut Sisa Satu!';
-                desc = 'Part terpasang, tapi ada sisa baut misterius di lantai. Pasrah aja lah ya...';
-                icon = '🔩';
-            }
-
-            Swal.fire({
-                title: `GACHA SERVIS: ${rank}`,
-                html: `<div class="text-center"><span class="text-6xl block my-3 animate-bounce">${icon}</span><b class="text-white text-base">${title}</b><p class="text-xs text-gray-400 mt-2 leading-relaxed">${desc}</p></div>`,
-                background: '#121215', color: '#fff', confirmButtonColor: '#ea580c', confirmButtonText: 'Terima Nasib & Simpan',
-                customClass: { popup: 'rounded-2xl border border-gray-800' }
-            }).then(() => {
-                myData[tab].baselines[partId] = km;
-                myData.serviceLogs.unshift({
-                    date: new Date().toLocaleDateString('id-ID'),
-                    tab: tab.toUpperCase(),
-                    partName: partName,
-                    km: km,
-                    gacha: rank
-                });
-                localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
-                renderDashboard();
-            });
-        }
-
-        // --- LOG BENSIN (FUEL TRACKER) ---
-        function logFuel() {
-            const km = myData[myData.activeTab].currentKM;
-            const liters = parseFloat(document.getElementById('fuelLiterInput').value);
-            if(!km || !liters) return alert('Masukkan KM Odometer dan Jumlah Liter Bensin!');
-
-            myData.fuelLogs.unshift({ km: km, liters: liters, date: new Date().toLocaleDateString('id-ID') });
-            if(myData.fuelLogs.length > 10) myData.fuelLogs.pop();
-            localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
-            
-            document.getElementById('fuelLiterInput').value = '';
-            renderDashboard();
-            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'BBM Tercatat!', showConfirmButton: false, timer: 1500, background: '#121215', color: '#fff' });
-        }
-
-        function calculateFuelConsumption() {
-            const logs = myData.fuelLogs;
-            const el = document.getElementById('avgFuelConsumption');
-            if(logs.length < 2) {
-                el.innerText = 'Butuh 2x Log';
-                return;
-            }
-            const kmDiff = logs[0].km - logs[1].km;
-            const liters = logs[0].liters;
-            if(kmDiff > 0 && liters > 0) {
-                const avg = (kmDiff / liters).toFixed(1);
-                el.innerText = `~${avg} KM/L`;
-            }
-        }
-
-        // --- FAKE BREAKDOWN & PANIC ---
-        function openFakeBreakdown() {
-            document.getElementById('fakeOdoKM').innerText = myData[myData.activeTab].currentKM;
-            document.getElementById('fakeVehicleName').innerText = myData.activeTab.toUpperCase() + " SYSTEM";
-            document.getElementById('fakeTime').innerText = new Date().toLocaleTimeString('id-ID');
-            document.getElementById('fakeBreakdownOverlay').classList.remove('hidden');
-        }
-
-        function triggerPanicSell() {
-            Swal.fire({
-                title: 'MENDING JUAL MOTOR?',
-                text: 'Biaya servis udah numpuk parah. Mau cek harga sepeda ontel atau motor baru?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Buka OLX / Marketplace',
-                cancelButtonText: 'Bertahan Hidup',
-                background: '#121215', color: '#fff',
-                customClass: { popup: 'rounded-2xl border border-gray-800' }
-            }).then((res) => {
-                if(res.isConfirmed) {
-                    window.open('https://www.olx.co.id/motor-bekas_c200', '_blank');
-                }
-            });
-        }
-
-        // --- EDIT HARGA PART ---
-        async function openPriceEditor() {
-            let html = '<div class="space-y-3 text-left max-h-60 overflow-y-auto pr-1">';
-            CONFIG[myData.activeTab].forEach(p => {
-                const currentPrice = myData.prices[p.id] || p.defaultPrice;
-                html += `<div class="flex justify-between items-center text-xs"><span>${p.name}:</span> <input type="number" id="price_${p.id}" value="${currentPrice}" class="w-28 bg-carbon border border-gray-700 p-2 text-right text-white font-mono rounded-xl outline-none focus:border-antOrange"></div>`;
-            });
-            html += '</div>';
-
-            const { isConfirmed } = await Swal.fire({
-                title: 'EDIT HARGA PART',
-                html: html,
-                showCancelButton: true,
-                confirmButtonColor: '#ea580c',
-                background: '#121215', color: '#fff',
-                customClass: { popup: 'rounded-2xl border border-gray-800' },
-                preConfirm: () => {
-                    CONFIG[myData.activeTab].forEach(p => {
-                        const val = parseInt(document.getElementById(`price_${p.id}`).value);
-                        if(val) myData.prices[p.id] = val;
-                    });
-                }
-            });
-
-            if(isConfirmed) {
-                localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
-                renderDashboard();
-            }
-        }
-
-        function viewServiceHistory() {
-            let html = '<div class="space-y-2 text-left max-h-60 overflow-y-auto text-xs font-mono pr-1">';
-            if(myData.serviceLogs.length === 0) html += '<p class="text-gray-500 text-center py-4">Belum ada riwayat servis.</p>';
-            myData.serviceLogs.forEach(l => {
-                html += `<div class="p-2.5 bg-carbon/50 border border-gray-800 rounded-xl"><b>[${l.date}] ${l.tab}</b> - ${l.partName}<br><span class="text-gray-400">Pada ${l.km} KM (${l.gacha})</span></div>`;
-            });
-            html += '</div>';
-            Swal.fire({ title: 'LOG RIWAYAT SERVIS', html: html, background: '#121215', color: '#fff', confirmButtonColor: '#ea580c', customClass: { popup: 'rounded-2xl border border-gray-800' } });
-        }
-
-        async function editBaseline(partId, partName, currentBaseline) {
-            const tab = myData.activeTab;
-            const { value: inputKM } = await Swal.fire({
-                title: 'EDIT KM TERAKHIR',
-                html: `<span class="text-xs text-gray-400">Kapan terakhir kali <b>${partName}</b> diganti?</span>`,
-                input: 'number', inputValue: currentBaseline,
-                showCancelButton: true, background: '#121215', color: '#fff', confirmButtonColor: '#ea580c',
-                customClass: { popup: 'rounded-2xl border border-gray-800' }
-            });
-
-            if (inputKM !== undefined && inputKM !== '') {
-                myData[tab].baselines[partId] = parseInt(inputKM);
-                localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
-                renderDashboard();
-            }
-        }
-
-        // Backup/Restore/Sync Functions
-        function backupData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(myData, null, 2));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", `MotoTracker_Ultra_${new Date().toISOString().slice(0,10)}.json`);
-            dlAnchorElem.click();
-        }
-
-        function restoreData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const parsed = JSON.parse(e.target.result);
-                    if(parsed.matic && parsed.moped) {
-                        myData = parsed;
-                        localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
-                        document.getElementById('syncUrl').value = myData.syncUrl || '';
-                        switchTab(myData.activeTab);
-                        Swal.fire({ icon: 'success', title: 'Restore Berhasil!', background: '#121215', color: '#fff', showConfirmButton: false, timer: 1500 });
-                    }
-                } catch (err) {
-                    Swal.fire({ icon: 'error', title: 'Gagal', text: 'File JSON rusak.', background: '#121215', color: '#fff' });
-                }
-                event.target.value = '';
-            };
-            reader.readAsText(file);
-        }
-
-        // Kirim ke Apps Script. Kalau app ini di-load di dalam iframe (portal Index.html),
-        // fetch langsung ke script.google.com akan diblokir browser (redirect lintas domain
-        // di dalam nested iframe). Jadi relay lewat parent window yang top-level.
-        function syncViaGAS(url, payload) {
-            if (window.self === window.top) {
-                return fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-            }
-            return new Promise((resolve, reject) => {
-                const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-                function handler(event) {
-                    if (!event.data || event.data.type !== 'GAS_SYNC_RESPONSE' || event.data.requestId !== requestId) return;
-                    window.removeEventListener('message', handler);
-                    clearTimeout(timer);
-                    event.data.status === 'ok' ? resolve() : reject(new Error(event.data.error || 'Gagal sync'));
-                }
-                const timer = setTimeout(() => {
-                    window.removeEventListener('message', handler);
-                    reject(new Error('Timeout: parent portal tidak merespons'));
-                }, 10000);
-                window.addEventListener('message', handler);
-                window.parent.postMessage({ type: 'GAS_SYNC_REQUEST', requestId, url, payload }, '*');
-            });
-        }
-
-        async function syncToCloud() {
-            const url = document.getElementById('syncUrl').value.trim();
-            if (!url.startsWith('https://script.google.com')) return alert('URL tidak valid!');
-
-            myData.syncUrl = url;
-            localStorage.setItem('my_moto_ultra', JSON.stringify(myData));
-            Swal.fire({ title: 'Sinkronisasi...', background: '#121215', color: '#fff', didOpen: () => { Swal.showLoading() } });
-
-            try {
-                await syncViaGAS(url, myData);
-                Swal.fire({ icon: 'success', title: 'Tersinkronisasi!', background: '#121215', color: '#fff', confirmButtonColor: '#ea580c' });
-            } catch (e) {
-                Swal.fire({ icon: 'error', title: 'Gagal Sync', background: '#121215', color: '#fff' });
-            }
-        }
-    </script>
-</body>
-</html>
+<!DOCTYPE html><html lang="id" class="dark"><head>    <meta charset="UTF-8">    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">    <title>My Ride - Ultra Edition</title>        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">        <script src="https://cdn.tailwindcss.com"></script>    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>    <script>        tailwind.config = {            darkMode: 'class',            theme: {                extend: {                    fontFamily: {                         sans: ['Plus Jakarta Sans', 'sans-serif'],                         mono: ['JetBrains Mono', 'monospace']                     },                    colors: {                         carbon: '#09090b',                         surface: '#121215',                         surfaceLight: '#1e1e24',                        antOrange: '#f97316',                         antRed: '#ef4444',                         success: '#10b981',                         warning: '#f59e0b'                    }                }            }        }    </script>    <style>        body {             background-color: #09090b;             color: #f3f4f6;             -webkit-tap-highlight-color: transparent;            background-image:                 radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.08) 0px, transparent 50%),                radial-gradient(at 100% 100%, rgba(239, 68, 68, 0.05) 0px, transparent 50%);            background-attachment: fixed;        }        .glass-card {             background: rgba(18, 18, 21, 0.75);             backdrop-filter: blur(16px);            -webkit-backdrop-filter: blur(16px);            border: 1px solid rgba(255, 255, 255, 0.08);             border-radius: 20px;             box-shadow: 0 20px 40px -15px rgba(0,0,0,0.6);            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);        }        .glass-card:hover { border-color: rgba(249, 115, 22, 0.3); }        .bar-transition { transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1); }        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }                .tab-active { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4); }        .tab-inactive { background-color: rgba(30, 30, 36, 0.6); color: #9ca3af; border: 1px solid rgba(255, 255, 255, 0.05); }        .tab-inactive:hover { color: #ffffff; background-color: rgba(30, 30, 36, 0.9); }        ::-webkit-scrollbar { width: 6px; }        ::-webkit-scrollbar-track { background: #09090b; }        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }        ::-webkit-scrollbar-thumb:hover { background: #f97316; }                @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }        @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); } 50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.8); } }        .animate-fadeInUp { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }        .animate-pulseGlow { animation: pulseGlow 2s infinite ease-in-out; }    </style></head><body class="min-h-screen p-3 sm:p-6 lg:p-8 font-sans selection:bg-antOrange selection:text-white pb-28">    <div class="max-w-md md:max-w-4xl lg:max-w-6xl mx-auto space-y-6">                <header class="flex justify-between items-center bg-surface/80 p-4 sm:p-5 rounded-2xl border border-white/5 backdrop-blur-md shadow-xl animate-fadeInUp">            <div class="flex items-center gap-3">                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-antOrange to-amber-500 flex items-center justify-center text-white shadow-lg shadow-antOrange/30 font-black text-xl italic">                    M                </div>                <div>                    <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter uppercase italic flex items-center gap-1">                        Motor<span class="text-antOrange">Ku</span>                        <span class="text-[10px] non-italic font-mono bg-antOrange/20 text-antOrange border border-antOrange/30 px-2 py-0.5 rounded-full uppercase tracking-wider ml-1">v2.1</span>                    </h1>                    <p class="text-[10px] sm:text-xs text-gray-400 font-mono tracking-widest uppercase">Super App Kendaraan</p>                </div>            </div>            <div class="flex gap-2 sm:gap-3">                <button onclick="openFakeBreakdown()" class="px-3 py-2.5 sm:px-4 bg-red-500/10 text-red-500 border border-red-500/30 rounded-xl hover:bg-red-500/20 active:scale-95 transition-all text-xs font-bold flex items-center gap-2 shadow-lg">                    <i class="bi bi-shield-exclamation text-sm"></i>                     <span class="hidden sm:inline">Panic</span> Mode                </button>                <button onclick="document.getElementById('settingsModal').classList.remove('hidden')" class="p-2.5 sm:px-3.5 bg-surfaceLight border border-gray-700/60 text-white rounded-xl hover:bg-gray-800 active:scale-95 transition-all text-xs shadow-lg">                    <i class="bi bi-gear-fill text-sm"></i>                </button>            </div>        </header>        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">            <!-- LEFT COLUMN -->            <div class="lg:col-span-7 space-y-5">                                <div class="grid grid-cols-2 gap-3 p-1.5 bg-surfaceLight/50 rounded-2xl border border-white/5 backdrop-blur-md">                    <button onclick="switchTab('matic')" id="tab-matic" class="py-3 rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 tab-active">                        <i class="bi bi-scooter text-lg"></i> Matic                    </button>                    <button onclick="switchTab('moped')" id="tab-moped" class="py-3 rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 tab-inactive">                        <i class="bi bi-bicycle text-lg"></i> Moped                    </button>                </div>                <!-- Odometer -->                <div class="glass-card p-5 sm:p-6 border-t-4 border-t-antOrange relative overflow-hidden group">                    <label class="text-xs text-gray-400 font-bold uppercase tracking-wider block mb-3 flex items-center justify-between">                        <span>Odometer Saat Ini</span>                        <span class="text-[10px] text-antOrange bg-antOrange/10 px-2 py-0.5 rounded font-mono">Live Sync</span>                    </label>                    <div class="relative">                        <input type="number" id="currentKM" placeholder="Misal: 12500" class="w-full bg-carbon/90 border-2 border-surfaceLight rounded-2xl text-4xl sm:text-5xl font-mono font-black text-white px-5 py-4 focus:border-antOrange focus:ring-4 focus:ring-antOrange/20 outline-none transition-all text-center shadow-inner tracking-wider" oninput="saveKM()">                        <div class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500 font-black text-lg font-mono">KM</div>                    </div>                </div>                <!-- Fast Input Konsumsi BBM -->                <div class="glass-card p-5 border-l-4 border-l-green-500 animate-fadeInUp bg-gradient-to-r from-green-950/20 to-transparent">                    <div class="flex justify-between items-center mb-3">                        <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">                            <i class="bi bi-fuel-pump-fill text-green-500 text-base"></i> Isi Bensin (Quick Add)                        </h3>                        <span id="avgFuelConsumption" class="text-xs font-mono font-bold text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20">0 KM/L</span>                    </div>                    <div class="flex gap-2">                        <input type="number" id="fuelLiterInput" step="0.1" placeholder="Berapa liter ngab? (misal 3.5)" class="flex-1 bg-carbon/90 border-2 border-surfaceLight rounded-xl text-sm font-mono px-4 py-3 text-white outline-none focus:border-green-500 transition-colors">                        <button onclick="logFuel()" class="bg-green-600 hover:bg-green-500 text-white text-sm font-bold px-5 py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-green-600/20 flex items-center gap-2 whitespace-nowrap">                            <i class="bi bi-send-fill"></i> Catat                        </button>                    </div>                </div>                <div class="pt-2">                    <div class="flex justify-between items-center mb-4 px-1">                        <h2 class="text-base font-extrabold text-white uppercase tracking-wider flex items-center gap-2">                            <i class="bi bi-activity text-antOrange animate-pulse"></i> Status Komponen                        </h2>                        <span class="text-xs text-gray-400 font-mono" id="partCountLabel">-- Part Pantau</span>                    </div>                    <div id="partsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>                </div>            </div>            <!-- RIGHT COLUMN -->            <div class="lg:col-span-5 space-y-5">                                <div id="panicBtnContainer" class="hidden animate-fadeInUp">                    <button onclick="triggerPanicSell()" class="w-full py-4 bg-gradient-to-r from-red-600 to-antRed hover:from-red-700 hover:to-red-600 text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-2xl shadow-xl animate-pulseGlow active:scale-95 transition-all flex items-center justify-center gap-2">                        <i class="bi bi-fire text-xl"></i> 3+ Part Kritis! Mending Jual <i class="bi bi-arrow-right"></i>                    </button>                </div>                <div id="roastContainer" class="hidden glass-card p-5 border-l-4 border-l-red-500 bg-red-950/20 animate-fadeInUp">                    <div class="flex items-start gap-3">                        <span class="text-3xl animate-bounce">🛠️</span>                        <div>                            <h4 class="text-xs font-black text-red-500 uppercase tracking-wider flex items-center gap-1">                                Mekanik AI Ngomel:                            </h4>                            <p id="roastText" class="text-xs text-gray-200 mt-1 italic font-medium leading-relaxed"></p>                        </div>                    </div>                </div>                <div id="insightContainer" class="hidden glass-card p-5 border-l-4 animate-fadeInUp">                    <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">                        <i class="bi bi-robot text-antOrange text-base"></i> Diagnostik AI                    </h3>                    <ul id="insightList" class="space-y-2 text-xs"></ul>                </div>                <div id="budgetCard" class="hidden glass-card p-5 bg-gradient-to-br from-surfaceLight/80 to-carbon animate-fadeInUp">                    <div class="flex justify-between items-center">                        <div>                            <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Siapin Dana Darurat</span>                            <h3 id="budgetValue" class="text-2xl font-black text-antOrange font-mono tracking-tight">Rp 0</h3>                        </div>                        <button onclick="openPriceEditor()" class="text-xs bg-carbon hover:bg-surfaceLight border border-gray-700 px-3 py-2 rounded-xl text-gray-300 hover:text-white font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow">                            <i class="bi bi-pencil-square text-antOrange"></i> Edit                        </button>                    </div>                </div>            </div>        </div>    </div>    <!-- Smart Breakdown Overlay -->    <div id="fakeBreakdownOverlay" class="hidden fixed inset-0 bg-black/95 backdrop-blur-xl z-[9999] p-6 flex flex-col justify-between font-mono text-green-500 overflow-y-auto animate-fadeInUp">        <div class="space-y-6 max-w-lg mx-auto w-full pt-4">            <div class="border-b border-green-800/80 pb-4 flex justify-between items-center">                <span class="text-xs font-bold uppercase tracking-widest text-red-500 animate-pulse flex items-center gap-2">                    <i class="bi bi-exclamation-octagon-fill"></i> ENGINE FAILURE DETECTED                </span>                <span class="text-xs text-gray-500" id="fakeTime">10:42 PM</span>            </div>            <div class="text-center py-6">                <i class="bi bi-shield-x text-7xl text-red-600 animate-pulse inline-block mb-3"></i>                <h2 class="text-2xl font-black text-white uppercase tracking-wider">SISTEM LUMPUH</h2>                <p class="text-xs text-red-400 mt-2" id="fakeDesc">Menganalisa kerusakan mesin...</p>            </div>            <div class="bg-gray-950/80 p-5 rounded-2xl border border-gray-800 text-xs space-y-3 text-gray-300 shadow-2xl">                <p class="flex justify-between border-b border-gray-800 pb-2"><b>Unit:</b> <span id="fakeVehicleName" class="text-white font-bold">Matic System</span></p>                <p class="flex justify-between border-b border-gray-800 pb-2"><b>Odometer:</b> <span class="text-white font-bold"><span id="fakeOdoKM">0</span> KM</span></p>                <p class="flex justify-between border-b border-gray-800 pb-2"><b>Log Error:</b> <span class="text-yellow-500 font-bold" id="fakeCode">ERR_0x88</span></p>                <p class="flex justify-between"><b>Rekomendasi:</b> <span class="text-red-400">Panggil Towing / Mekanik</span></p>            </div>            <p class="text-[11px] text-gray-500 italic text-center">Screenshot layar ini buat alesan telat ke dosen/bos ngab 👍</p>        </div>        <div class="max-w-lg mx-auto w-full pb-4">            <button onclick="document.getElementById('fakeBreakdownOverlay').classList.add('hidden')" class="w-full py-4 bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800 rounded-xl font-bold text-sm uppercase tracking-widest transition-all active:scale-95 shadow-lg">                Tutup Mode Mogok            </button>        </div>    </div>    <!-- Modal Pengaturan -->    <div id="settingsModal" class="fixed inset-0 z-50 hidden flex flex-col justify-end sm:justify-center items-center p-0 sm:p-4">        <div class="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity" onclick="document.getElementById('settingsModal').classList.add('hidden')"></div>        <div class="relative bg-surface border-t sm:border border-antOrange/40 rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto w-full max-w-md mx-auto shadow-2xl z-10 animate-fadeInUp">                        <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">                <h3 class="text-base font-black text-white uppercase tracking-tight flex items-center gap-2">                    <i class="bi bi-sliders text-antOrange"></i> Pengaturan                </h3>                <button onclick="document.getElementById('settingsModal').classList.add('hidden')" class="text-gray-400 hover:text-white p-1.5 transition-colors">                    <i class="bi bi-x-lg text-lg"></i>                </button>            </div>            <div class="space-y-5">                <div>                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-2 tracking-wider">Riwayat Servis</label>                    <button onclick="viewServiceHistory()" class="w-full bg-carbon border border-gray-700/80 hover:border-antOrange text-white py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 active:scale-95 shadow">                        <i class="bi bi-clock-history text-antOrange"></i> Buka Log Transaksi                    </button>                </div>                <div>                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-2 tracking-wider">Backup & Restore</label>                    <div class="grid grid-cols-2 gap-2">                        <button onclick="backupData()" class="bg-carbon border border-gray-700/80 hover:border-antOrange text-white py-3 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5"><i class="bi bi-download text-antOrange"></i> Backup</button>                        <button onclick="document.getElementById('fileInput').click()" class="bg-carbon border border-gray-700/80 hover:border-antOrange text-white py-3 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5"><i class="bi bi-upload text-antOrange"></i> Restore</button>                        <input type="file" id="fileInput" accept=".json" class="hidden" onchange="restoreData(event)">                    </div>                </div>                <!-- Cloud Sync Dikembalikan! -->                <div>                    <label class="text-[10px] text-gray-400 font-bold uppercase block mb-2 tracking-wider">Cloud Sync (Apps Script)</label>                    <input type="url" id="syncUrl" placeholder="https://script.google.com/macros/s/..." class="w-full bg-carbon border border-gray-700 rounded-xl text-xs font-mono text-white px-3.5 py-3 outline-none focus:border-antOrange transition-colors mb-2">                    <button onclick="syncToCloud()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">                        <i class="bi bi-cloud-arrow-up-fill"></i> Sinkronisasi Cloud                    </button>                </div>            </div>        </div>    </div>    <script>        const CONFIG = {            matic: [                { id: 'oli_mesin', name: 'Oli Mesin', interval: 2500, icon: 'bi-droplet-fill', defaultPrice: 55000 },                { id: 'oli_gardan', name: 'Oli Gardan', interval: 8000, icon: 'bi-gear-wide-connected', defaultPrice: 25000 },                { id: 'vbelt', name: 'V-Belt (CVT)', interval: 24000, icon: 'bi-nut-fill', defaultPrice: 160000 },                { id: 'roller_cvt', name: 'Roller CVT', interval: 15000, icon: 'bi-circle-fill', defaultPrice: 75000 },                { id: 'kampas_ganda', name: 'Kampas Ganda', interval: 24000, icon: 'bi-disc-fill', defaultPrice: 180000 },                { id: 'air_radiator', name: 'Air Radiator', interval: 12000, icon: 'bi-thermometer-snow', defaultPrice: 35000 },                { id: 'kampas_rem_depan', name: 'Kampas Rem Depan', interval: 12000, icon: 'bi-record-circle', defaultPrice: 45000 },                { id: 'kampas_rem_blk', name: 'Kampas Rem Blk', interval: 15000, icon: 'bi-record-circle-fill', defaultPrice: 50000 }            ],            moped: [                { id: 'oli_mesin', name: 'Oli Mesin', interval: 2500, icon: 'bi-droplet-fill', defaultPrice: 55000 },                { id: 'rantai_gir', name: 'Rantai & Gir Set', interval: 15000, icon: 'bi-link-45deg', defaultPrice: 180000 },                { id: 'kampas_kopling', name: 'Kampas Kopling', interval: 20000, icon: 'bi-layers-fill', defaultPrice: 150000 },                { id: 'kampas_rem_depan', name: 'Kampas Rem Depan', interval: 12000, icon: 'bi-record-circle', defaultPrice: 45000 }            ]        };        const ROAST_MESSAGES = [            "Oli mesin udah sekental janji manis mantan, kapan diganti ngab?!",            "Suara mesin udah kayak helikopter mendarat, buruan servis sebelum rontok di jalan!",            "Ini motor atau artefak sejarah? Part-nya udah pada teriak minta ampun tuh."        ];        let myData = JSON.parse(localStorage.getItem('my_moto_ultra')) || {            activeTab: 'matic',            syncUrl: '',            fuelLogs: [],            serviceLogs: [],            prices: {},            matic: { currentKM: 0, baselines: {} },            moped: { currentKM: 0, baselines: {} }        };        document.addEventListener('DOMContentLoaded', () => {            document.getElementById('syncUrl').value = myData.syncUrl || '';            switchTab(myData.activeTab);        });        function switchTab(tab) {            myData.activeTab = tab;            localStorage.setItem('my_moto_ultra', JSON.stringify(myData));                        document.getElementById('tab-matic').className = `py-3 rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 ${tab === 'matic' ? 'tab-active' : 'tab-inactive'}`;            document.getElementById('tab-moped').className = `py-3 rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 ${tab === 'moped' ? 'tab-active' : 'tab-inactive'}`;                        document.getElementById('currentKM').value = myData[tab].currentKM || '';            renderDashboard();        }        function saveKM() {            const val = parseInt(document.getElementById('currentKM').value) || 0;            myData[myData.activeTab].currentKM = val;            localStorage.setItem('my_moto_ultra', JSON.stringify(myData));            renderDashboard();        }        function renderDashboard() {            const tab = myData.activeTab;            const km = myData[tab].currentKM;            const parts = CONFIG[tab];            const container = document.getElementById('partsContainer');                        const insightBox = document.getElementById('insightContainer');            const insightList = document.getElementById('insightList');            const roastBox = document.getElementById('roastContainer');            const panicBox = document.getElementById('panicBtnContainer');            const budgetCard = document.getElementById('budgetCard');            const budgetValEl = document.getElementById('budgetValue');            const partCountLabel = document.getElementById('partCountLabel');                        if (partCountLabel) partCountLabel.innerText = `${parts.length} Komponen`;            let urgents = [];            let warnings = [];            let totalEstimatedBudget = 0;            let severeOverdue = false;            container.innerHTML = '';            calculateFuelConsumption();            if(km === 0) return;            parts.forEach((part, idx) => {                const lastKM = myData[tab].baselines[part.id] !== undefined ? myData[tab].baselines[part.id] : 0;                const nextKM = lastKM + part.interval;                const kmUsed = km - lastKM;                let progress = (kmUsed / part.interval) * 100;                let visualProgress = Math.min(Math.max(progress, 0), 100);                 let barColor = 'bg-success shadow-[0_0_10px_rgba(16,185,129,0.5)]';                let statusBadge = '<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">AMAN</span>';                let cardStyle = '';                const price = myData.prices[part.id] || part.defaultPrice;                if (km >= nextKM) {                    barColor = 'bg-antRed shadow-[0_0_15px_rgba(239,68,68,0.8)] animate-pulse';                     statusBadge = '<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse">GANTI NGAB!</span>';                    cardStyle = 'border border-red-500/50 bg-red-950/10';                    urgents.push(part.name);                    totalEstimatedBudget += price;                    if(km - nextKM > 300) severeOverdue = true;                } else if (km >= nextKM - 500) {                    barColor = 'bg-warning shadow-[0_0_10px_rgba(245,158,11,0.5)]';                     statusBadge = '<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">SIAP-SIAP</span>';                    warnings.push(part.name);                    totalEstimatedBudget += price;                }                container.innerHTML += `                    <div class="glass-card p-4.5 relative overflow-hidden flex flex-col justify-between ${cardStyle} animate-fadeInUp" style="animation-delay: ${idx * 0.05}s">                        <div>                            <div class="flex justify-between items-start mb-3 gap-2">                                <div class="flex items-center gap-2.5">                                    <div class="w-9 h-9 rounded-xl bg-carbon/80 border border-white/5 flex items-center justify-center text-antOrange text-base shadow-inner">                                        <i class="bi ${part.icon}"></i>                                    </div>                                    <div>                                        <h3 class="text-sm font-bold text-white tracking-wide">${part.name}</h3>                                        <p class="text-[10px] text-gray-400 font-mono">Batas: ${nextKM.toLocaleString('id-ID')} KM</p>                                    </div>                                </div>                                <div>${statusBadge}</div>                            </div>                            <div class="my-3">                                <div class="h-2 w-full bg-carbon/90 rounded-full overflow-hidden p-0.5 border border-white/5">                                    <div class="h-full ${barColor} bar-transition rounded-full" style="width: ${visualProgress}%"></div>                                </div>                            </div>                        </div>                        <div class="flex justify-between items-center pt-2 border-t border-white/5 mt-1">                            <span class="text-[10px] font-mono text-gray-400">Est: <b class="text-white">Rp ${price.toLocaleString('id-ID')}</b></span>                            <div class="flex gap-1.5">                                <button onclick="editBaseline('${part.id}', '${part.name}', ${lastKM})" class="text-[10px] bg-carbon hover:bg-surfaceLight border border-gray-700 text-gray-300 hover:text-white px-2 py-1 rounded-lg transition-colors"><i class="bi bi-pencil-fill"></i></button>                                <button onclick="triggerGachaReset('${part.id}', '${part.name}')" class="text-[10px] bg-antOrange/10 hover:bg-antOrange border border-antOrange/30 text-antOrange hover:text-white px-2.5 py-1 rounded-lg font-bold transition-all active:scale-95">RESET</button>                            </div>                        </div>                    </div>                `;            });            if(totalEstimatedBudget > 0) {                budgetCard.classList.remove('hidden');                budgetValEl.innerText = `Rp ${totalEstimatedBudget.toLocaleString('id-ID')}`;            } else { budgetCard.classList.add('hidden'); }            if(severeOverdue) {                roastBox.classList.remove('hidden');                document.getElementById('roastText').innerText = ROAST_MESSAGES[Math.floor(Math.random() * ROAST_MESSAGES.length)];            } else { roastBox.classList.add('hidden'); }            if(urgents.length >= 3) { panicBox.classList.remove('hidden'); }             else { panicBox.classList.add('hidden'); }            insightBox.classList.remove('hidden');            insightList.innerHTML = '';            if (urgents.length > 0) { insightList.innerHTML += `<li class="text-antRed font-bold flex items-center gap-1.5"><i class="bi bi-x-circle-fill"></i> Bro, lu harus banget ganti <b>${urgents.join(', ')}</b>!</li>`; }            if (warnings.length > 0) { insightList.innerHTML += `<li class="text-warning flex items-center gap-1.5"><i class="bi bi-exclamation-circle-fill"></i> Peringatan: Siapin duit buat <b>${warnings.join(', ')}</b>.</li>`; }            if (urgents.length === 0 && warnings.length === 0) { insightList.innerHTML += `<li class="text-success flex items-center gap-1.5"><i class="bi bi-check-circle-fill"></i> Aman ngab, motor sehat siap Sunmori!</li>`; }        }        // --- MANAJEMEN DATA ---        function triggerGachaReset(partId, partName) {            const tab = myData.activeTab;            const km = myData[tab].currentKM;            myData[tab].baselines[partId] = km;            myData.serviceLogs.unshift({ date: new Date().toLocaleDateString('id-ID'), tab: tab.toUpperCase(), partName: partName, km: km });            localStorage.setItem('my_moto_ultra', JSON.stringify(myData));            renderDashboard();            Swal.fire({ toast: true, position: 'top', icon: 'success', title: `${partName} berhasil di-reset!`, showConfirmButton: false, timer: 1500, background: '#121215', color: '#fff' });        }                async function editBaseline(partId, partName, currentBaseline) {            const tab = myData.activeTab;            const { value: inputKM } = await Swal.fire({                title: 'EDIT KM TERAKHIR',                html: `<span class="text-xs text-gray-400">Kapan terakhir kali <b>${partName}</b> diganti?</span>`,                input: 'number', inputValue: currentBaseline,                showCancelButton: true, background: '#121215', color: '#fff', confirmButtonColor: '#ea580c',                customClass: { popup: 'rounded-2xl border border-gray-800' }            });            if (inputKM !== undefined && inputKM !== '') {                myData[tab].baselines[partId] = parseInt(inputKM);                localStorage.setItem('my_moto_ultra', JSON.stringify(myData));                renderDashboard();            }        }        function logFuel() {            const km = myData[myData.activeTab].currentKM;            const liters = parseFloat(document.getElementById('fuelLiterInput').value);            if(!km || !liters) return alert('Odometer & Bensin harus diisi bro!');            myData.fuelLogs.unshift({ km: km, liters: liters, date: new Date().toLocaleDateString('id-ID') });            if(myData.fuelLogs.length > 10) myData.fuelLogs.pop();            localStorage.setItem('my_moto_ultra', JSON.stringify(myData));                        document.getElementById('fuelLiterInput').value = '';            renderDashboard();            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Data BBM masuk!', showConfirmButton: false, timer: 1500, background: '#121215', color: '#fff' });        }        function calculateFuelConsumption() {            const logs = myData.fuelLogs;            const el = document.getElementById('avgFuelConsumption');            if(logs.length < 2) { el.innerText = 'Butuh 2x Isi'; return; }            const kmDiff = logs[0].km - logs[1].km;            const liters = logs[0].liters;            if(kmDiff > 0 && liters > 0) { el.innerText = `~${(kmDiff / liters).toFixed(1)} KM/L`; }        }                async function openPriceEditor() {            let html = '<div class="space-y-3 text-left max-h-60 overflow-y-auto pr-1">';            CONFIG[myData.activeTab].forEach(p => {                const currentPrice = myData.prices[p.id] || p.defaultPrice;                html += `<div class="flex justify-between items-center text-xs"><span>${p.name}:</span> <input type="number" id="price_${p.id}" value="${currentPrice}" class="w-28 bg-carbon border border-gray-700 p-2 text-right text-white font-mono rounded-xl outline-none focus:border-antOrange"></div>`;            });            html += '</div>';            const { isConfirmed } = await Swal.fire({                title: 'EDIT HARGA PART',                html: html, showCancelButton: true, confirmButtonColor: '#ea580c', background: '#121215', color: '#fff',                customClass: { popup: 'rounded-2xl border border-gray-800' },                preConfirm: () => {                    CONFIG[myData.activeTab].forEach(p => {                        const val = parseInt(document.getElementById(`price_${p.id}`).value);                        if(val) myData.prices[p.id] = val;                    });                }            });            if(isConfirmed) { localStorage.setItem('my_moto_ultra', JSON.stringify(myData)); renderDashboard(); }        }        function viewServiceHistory() {            let html = '<div class="space-y-2 text-left max-h-60 overflow-y-auto text-xs font-mono pr-1">';            if(myData.serviceLogs.length === 0) html += '<p class="text-gray-500 text-center py-4">Belum ada riwayat servis.</p>';            myData.serviceLogs.forEach(l => { html += `<div class="p-2.5 bg-carbon/50 border border-gray-800 rounded-xl"><b>[${l.date}] ${l.tab}</b> - ${l.partName}<br><span class="text-gray-400">Pada ${l.km} KM</span></div>`; });            html += '</div>';            Swal.fire({ title: 'LOG RIWAYAT SERVIS', html: html, background: '#121215', color: '#fff', confirmButtonColor: '#ea580c', customClass: { popup: 'rounded-2xl border border-gray-800' } });        }        // --- BACKUP, RESTORE & CLOUD SYNC DIKEMBALIKAN ---        function backupData() {            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(myData, null, 2));            const dlAnchorElem = document.createElement('a');            dlAnchorElem.setAttribute("href", dataStr);            dlAnchorElem.setAttribute("download", `MotoTracker_Ultra_${new Date().toISOString().slice(0,10)}.json`);            dlAnchorElem.click();        }        function restoreData(event) {            const file = event.target.files[0];            if (!file) return;            const reader = new FileReader();            reader.onload = function(e) {                try {                    const parsed = JSON.parse(e.target.result);                    if(parsed.matic && parsed.moped) {                        myData = parsed;                        localStorage.setItem('my_moto_ultra', JSON.stringify(myData));                        document.getElementById('syncUrl').value = myData.syncUrl || '';                        switchTab(myData.activeTab);                        Swal.fire({ icon: 'success', title: 'Restore Berhasil!', background: '#121215', color: '#fff', showConfirmButton: false, timer: 1500 });                    }                } catch (err) {                    Swal.fire({ icon: 'error', title: 'Gagal', text: 'File JSON rusak.', background: '#121215', color: '#fff' });                }                event.target.value = '';            };            reader.readAsText(file);        }        function syncViaGAS(url, payload) {            if (window.self === window.top) {                return fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });            }            return new Promise((resolve, reject) => {                const requestId = 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2);                function handler(event) {                    if (!event.data || event.data.type !== 'GAS_SYNC_RESPONSE' || event.data.requestId !== requestId) return;                    window.removeEventListener('message', handler);                    clearTimeout(timer);                    event.data.status === 'ok' ? resolve() : reject(new Error(event.data.error || 'Gagal sync'));                }                const timer = setTimeout(() => {                    window.removeEventListener('message', handler);                    reject(new Error('Timeout: parent portal tidak merespons'));                }, 10000);                window.addEventListener('message', handler);                window.parent.postMessage({ type: 'GAS_SYNC_REQUEST', requestId, url, payload }, '*');            });        }        async function syncToCloud() {            const url = document.getElementById('syncUrl').value.trim();            if (!url.startsWith('https://script.google.com')) return alert('URL tidak valid!');            myData.syncUrl = url;            localStorage.setItem('my_moto_ultra', JSON.stringify(myData));            Swal.fire({ title: 'Sinkronisasi...', background: '#121215', color: '#fff', didOpen: () => { Swal.showLoading() } });            try {                await syncViaGAS(url, myData);                Swal.fire({ icon: 'success', title: 'Tersinkronisasi!', background: '#121215', color: '#fff', confirmButtonColor: '#ea580c' });            } catch (e) {                Swal.fire({ icon: 'error', title: 'Gagal Sync', background: '#121215', color: '#fff' });            }        }        // --- SMART BREAKDOWN LOGIC ---        function openFakeBreakdown() {            const tab = myData.activeTab;            const km = myData[tab].currentKM;            const parts = CONFIG[tab];            let urgents = [];            parts.forEach(part => {                const lastKM = myData[tab].baselines[part.id] || 0;                if (km >= lastKM + part.interval) { urgents.push(part.name); }            });            let errorDesc = ""; let errorCode = "";            if (urgents.length > 0) {                errorDesc = `KRITIS: ${urgents.join(', ')} hancur / rontok di jalan!`;                errorCode = `ERR_PART_FAILURE_0x${urgents.length}00`;            } else {                const randomErrors = ["ERR_KEHABISAN_BENSIN_0x404", "ERR_KABEL_DIGIGIT_TIKUS_0x69", "ERR_LUPA_BAYAR_CICILAN_0x99"];                errorCode = randomErrors[Math.floor(Math.random() * randomErrors.length)];                errorDesc = "Sistem mendeteksi anomali. Kayaknya lupa dipanasin atau bensin abis ngab.";            }            document.getElementById('fakeOdoKM').innerText = km;            document.getElementById('fakeVehicleName').innerText = tab.toUpperCase() + " SYSTEM";            document.getElementById('fakeTime').innerText = new Date().toLocaleTimeString('id-ID');            document.getElementById('fakeDesc').innerText = errorDesc;            document.getElementById('fakeCode').innerText = errorCode;            document.getElementById('fakeBreakdownOverlay').classList.remove('hidden');        }        function triggerPanicSell() {            window.open('https://www.olx.co.id/motor-bekas_c200', '_blank');        }    </script></body></html>
