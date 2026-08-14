@@ -336,7 +336,7 @@
     </div>
 
     <script>
-        const EXPENSE_CATEGORIES = [
+                const EXPENSE_CATEGORIES = [
             { id: 'makan', name: 'Makan', icon: '🍟', bg: 'bg-orange-100', text: 'text-orange-600', border: 'border-orange-200' },
             { id: 'belanja', name: 'Belanja', icon: '🛍️', bg: 'bg-pink-100', text: 'text-pink-600', border: 'border-pink-200' },
             { id: 'transport', name: 'Jalan', icon: '🛵', bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200' },
@@ -457,7 +457,6 @@
             const note = document.getElementById('quickNote').value.trim();
             if (!amount) return alertErr('Masukkan nominal belanjaan!');
             
-            // SMART AUTO CATEGORY (Menebak dari Note)
             let autoCategory = 'Cepat';
             const noteLow = note.toLowerCase();
             if(noteLow.includes('makan')||noteLow.includes('soto')||noteLow.includes('bakso')||noteLow.includes('kopi')||noteLow.includes('minum')||noteLow.includes('roti')||noteLow.includes('jco')||noteLow.includes('gacoan')) autoCategory = 'Makan';
@@ -489,9 +488,45 @@
             updateDashboard(); renderHistory(); processQueue();
         }
 
-        function transferWalletModal() { /* Sama seperti sebelumnya */ }
+        function transferWalletModal() {
+            Swal.fire({
+                title: 'Transfer Antar Dompet',
+                html: `
+                    <div class="text-left font-sans space-y-3">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">Dari Dompet</label>
+                            <select id="transferFrom" class="w-full p-3 rounded-xl border font-bold text-sm bg-white">
+                                <option value="bank">Rekening Bank (${formatRupiah(appConfig.bankBalance || 0)})</option>
+                                <option value="cash">Uang Tunai (${formatRupiah(appConfig.cashBalance || 0)})</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">Nominal</label>
+                            <input type="tel" id="transferAmount" placeholder="0" class="w-full p-3 rounded-xl border font-black text-lg" oninput="formatInputRupiah(this)">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true, confirmButtonText: 'Transfer', customClass: { popup: 'rounded-3xl font-sans' }
+            }).then(res => {
+                if (res.isConfirmed) {
+                    const from = document.getElementById('transferFrom').value;
+                    const amount = parseInt(document.getElementById('transferAmount').value.replace(/\./g, ''));
+                    const to = from === 'bank' ? 'cash' : 'bank';
+                    if (!amount) return;
+                    if (from === 'bank' && (appConfig.bankBalance || 0) < amount) return alertErr('Saldo Bank tidak cukup!');
+                    if (from === 'cash' && (appConfig.cashBalance || 0) < amount) return alertErr('Saldo Tunai tidak cukup!');
 
-        // --- NEW: FITUR TAGIHAN BULANAN ---
+                    if (from === 'bank') { appConfig.bankBalance -= amount; appConfig.cashBalance += amount; }
+                    else { appConfig.cashBalance -= amount; appConfig.bankBalance += amount; }
+
+                    localStorage.setItem('ngatur_config', JSON.stringify(appConfig));
+                    updateDashboard();
+                    Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Transfer berhasil!', showConfirmButton: false, timer: 1500 });
+                }
+            });
+        }
+
+        // --- FITUR TAGIHAN BULANAN ---
         function renderBills() {
             const container = document.getElementById('billList');
             container.innerHTML = '';
@@ -660,7 +695,6 @@
                     }
                     transactions = transactions.filter(t => t.id !== id);
                     localStorage.setItem('ngatur_tx', JSON.stringify(transactions));
-                    // PENTING: sertakan txDate agar AppScript tau sheet bulan mana yang harus dihapus
                     syncQueue.push({ action: 'delete', id: id, txDate: tx ? tx.date : '' }); 
                     localStorage.setItem('ngatur_queue', JSON.stringify(syncQueue));
                     updateDashboard(); renderHistory(); processQueue();
@@ -668,9 +702,84 @@
             });
         }
 
-        // --- SISTEM CLOUD SYNC ---
+        // --- SISTEM UTANG PIUTANG ---
+        function openDebtModal() {
+            Swal.fire({
+                title: 'Catat Hutang / Piutang',
+                html: `
+                    <div class="text-left font-sans space-y-3">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">Tipe</label>
+                            <select id="debtType" class="w-full p-3 rounded-xl border font-bold text-sm bg-white">
+                                <option value="hutang">Hutang (Saya Berhutang)</option>
+                                <option value="piutang">Piutang (Orang Lain Berhutang)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">Nama Orang / Pemberi</label>
+                            <input type="text" id="debtPerson" placeholder="Contoh: Budi" class="w-full p-3 rounded-xl border font-bold text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">Nominal</label>
+                            <input type="tel" id="debtAmount" placeholder="0" class="w-full p-3 rounded-xl border font-black text-lg" oninput="formatInputRupiah(this)">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true, confirmButtonText: 'Simpan', customClass: { popup: 'rounded-3xl font-sans' }
+            }).then(res => {
+                if(res.isConfirmed) {
+                    const type = document.getElementById('debtType').value;
+                    const person = document.getElementById('debtPerson').value.trim();
+                    const amount = parseInt(document.getElementById('debtAmount').value.replace(/\./g, ''));
+                    if(!person || !amount) return;
+                    debts.push({ id: 'debt_' + Date.now(), type, person, amount, status: 'unpaid' });
+                    localStorage.setItem('ngatur_debts', JSON.stringify(debts));
+                    renderDebts();
+                }
+            });
+        }
+
+        function renderDebts() {
+            const container = document.getElementById('debtList');
+            if(!container) return;
+            container.innerHTML = '';
+            if(debts.length === 0) {
+                container.innerHTML = `<div class="text-center py-4 bg-slate-50 rounded-xl border border-dashed"><p class="text-[10px] text-slate-400 font-bold">Tidak ada catatan hutang/piutang.</p></div>`;
+                return;
+            }
+            debts.forEach(d => {
+                const isPaid = d.status === 'paid';
+                container.innerHTML += `
+                    <div class="flex items-center justify-between p-3 rounded-2xl border ${isPaid ? 'bg-slate-50 opacity-60' : 'bg-white'} shadow-sm mb-2">
+                        <div>
+                            <p class="text-xs font-extrabold ${isPaid ? 'line-through text-slate-400' : 'text-slate-800'}">${d.person} (${d.type === 'hutang' ? 'Hutang' : 'Piutang'})</p>
+                            <p class="text-[10px] font-bold text-slate-400">${formatRupiah(d.amount)}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            ${!isPaid ? `<button onclick="settleDebt('${d.id}')" class="px-2 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[10px] font-bold">Lunas</button>` : ''}
+                            <button onclick="deleteDebt('${d.id}')" class="text-slate-300 hover:text-red-500 px-1"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function settleDebt(id) {
+            debts = debts.map(d => d.id === id ? {...d, status: 'paid'} : d);
+            localStorage.setItem('ngatur_debts', JSON.stringify(debts));
+            renderDebts();
+        }
+
+        function deleteDebt(id) {
+            debts = debts.filter(d => d.id !== id);
+            localStorage.setItem('ngatur_debts', JSON.stringify(debts));
+            renderDebts();
+        }
+
+        // --- SISTEM CLOUD SYNC & PENGATURAN ---
         function setStatus(text, type) {
-            const el = document.getElementById('syncStatus'); el.innerHTML = text;
+            const el = document.getElementById('syncStatus'); if(!el) return;
+            el.innerHTML = text;
             if(type==='sync') el.className = 'text-[10px] font-bold px-3 py-1.5 rounded-full bg-yellow-100 text-yellow-600 animate-pulse';
             if(type==='ok') el.className = 'text-[10px] font-bold px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-600';
             if(type==='wait') el.className = 'text-[10px] font-bold px-3 py-1.5 rounded-full bg-slate-100 text-slate-500';
@@ -698,15 +807,94 @@
         }
         function checkQueue() { syncQueue.length > 0 ? processQueue() : (appConfig.webAppUrl ? setStatus('Cloud Aktif', 'wait') : setStatus('Lokal Saja', 'wait')); }
         
-        function openSettings() { /* Logic sama */ document.getElementById('settingsModal').classList.remove('hidden'); }
-        function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); }
-        function saveSettings() { /* Sama seperti sebelumnya */ closeSettings(); }
-        function formatInputRupiah(i){let v=i.value.replace(/[^0-9]/g,''); if(v) i.value=new Intl.NumberFormat('id-ID').format(v); else i.value='';}
-        function formatRupiah(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:0}).format(n);}
-        function alertErr(m){Swal.fire({icon:'warning',text:m,customClass:{popup:'rounded-3xl font-sans'}});}
-        function exportSummary(t){ /* Logic sama seperti sebelumnya (WA) */ }
-        function openDebtModal(){ /* Logic sama utang piutang */ }
-        function renderDebts(){ /* Logic render utang piutang */ }
+        function openSettings() {
+            document.getElementById('settingBank').value = formatRupiah(appConfig.bankBalance || 0).replace(/[^0-9]/g, '');
+            document.getElementById('settingCash').value = formatRupiah(appConfig.cashBalance || 0).replace(/[^0-9]/g, '');
+            document.getElementById('settingBudget').value = formatRupiah(appConfig.budget || 0).replace(/[^0-9]/g, '');
+            document.getElementById('settingUrl').value = appConfig.webAppUrl || '';
+            formatInputRupiah(document.getElementById('settingBank'));
+            formatInputRupiah(document.getElementById('settingCash'));
+            formatInputRupiah(document.getElementById('settingBudget'));
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function saveSettings() {
+            appConfig.bankBalance = parseInt(document.getElementById('settingBank').value.replace(/\./g, '')) || 0;
+            appConfig.cashBalance = parseInt(document.getElementById('settingCash').value.replace(/\./g, '')) || 0;
+            appConfig.budget = parseInt(document.getElementById('settingBudget').value.replace(/\./g, '')) || 0;
+            appConfig.webAppUrl = document.getElementById('settingUrl').value.trim();
+            localStorage.setItem('ngatur_config', JSON.stringify(appConfig));
+            updateDashboard(); checkQueue(); closeSettings();
+            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Pengaturan disimpan!', showConfirmButton: false, timer: 1500 });
+        }
+
+        function logoutUser() {
+            Swal.fire({
+                title: 'Ganti Nama?', text: "Kamu akan diminta memasukkan nama baru.", showCancelButton: true, confirmButtonText: 'Ya, Ganti', customClass: { popup: 'rounded-3xl font-sans' }
+            }).then((res) => {
+                if (res.isConfirmed) { localStorage.removeItem('ngatur_user'); location.reload(); }
+            });
+        }
+
+        function exportSummary(type) {
+            const currentMonth = new Date().toISOString().substring(0, 7);
+            const monthTx = transactions.filter(t => t.date.substring(0, 7) === currentMonth);
+            const total = monthTx.filter(t => (t.type || 'expense') === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            const incomeTotal = monthTx.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+            
+            let text = `*LAPORAN KEUANGAN (${currentMonth}) - ${activeUser}*\n\n`;
+            text += `💰 Total Pemasukan: ${formatRupiah(incomeTotal)}\n`;
+            text += `💸 Total Pengeluaran: ${formatRupiah(total)}\n`;
+            text += `🏦 Saldo Bank: ${formatRupiah(appConfig.bankBalance || 0)}\n`;
+            text += `💵 Saldo Tunai: ${formatRupiah(appConfig.cashBalance || 0)}\n\n_Dikirim via NgaturUang App_`;
+            
+            if(type === 'wa') {
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+            }
+        }
+
+        function exportJSONBackup() {
+            const backupData = { user: activeUser, config: appConfig, transactions, bills: recurringBills, paidBills, debts };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+            const dl = document.createElement('a');
+            dl.setAttribute("href", dataStr);
+            dl.setAttribute("download", `Backup_NgaturUang_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(dl); dl.click(); dl.remove();
+            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Backup berhasil diunduh!', showConfirmButton: false, timer: 2000 });
+        }
+
+        function triggerImportJSON() { document.getElementById('jsonInputFile').click(); }
+
+        function importJSONBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const d = JSON.parse(e.target.result);
+                    if(d.user !== undefined && d.transactions !== undefined) {
+                        localStorage.setItem('ngatur_user', d.user);
+                        localStorage.setItem('ngatur_config', JSON.stringify(d.config || {}));
+                        localStorage.setItem('ngatur_tx', JSON.stringify(d.transactions || []));
+                        localStorage.setItem('ngatur_bills', JSON.stringify(d.bills || []));
+                        localStorage.setItem('ngatur_paid_bills', JSON.stringify(d.paidBills || {}));
+                        localStorage.setItem('ngatur_debts', JSON.stringify(d.debts || []));
+                        Swal.fire({ icon: 'success', title: 'Restore Berhasil!', text: 'Memuat ulang...', timer: 1500, showConfirmButton: false }).then(() => location.reload());
+                    } else { alertErr('File JSON tidak valid.'); }
+                } catch(err) { alertErr('Gagal membaca file JSON!'); }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function formatInputRupiah(i) { let v = i.value.replace(/[^0-9]/g,''); if(v) i.value = new Intl.NumberFormat('id-ID').format(v); else i.value = ''; }
+        function formatRupiah(n) { return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:0}).format(n); }
+        function alertErr(m) { Swal.fire({icon:'warning',text:m,customClass:{popup:'rounded-3xl font-sans'}}); }
     </script>
+
 </body>
 </html>
