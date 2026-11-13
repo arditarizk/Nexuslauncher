@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Direct Generator - Absurd Edition</title>
+    <title>WhatsApp Direct - AI Vision & Absurd Edition</title>
+    
+    <!-- Scripts & Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         body {
             background-color: #f3f4f6;
@@ -21,41 +25,72 @@
         .excel-table th, .excel-table td { border: 1px solid #d4d4d4; padding: 4px 8px; text-align: left; }
         .excel-table th { background-color: #f3f3f3; text-align: center; font-weight: normal; color: #666; }
         .excel-table .row-num { background-color: #f3f3f3; color: #666; text-align: center; width: 30px; }
+        
+        .ai-glow:hover {
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+            border-color: #38bdf8;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4 overflow-hidden relative">
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 bg-red-500 text-white px-5 py-3 rounded-xl shadow-xl transition-all duration-300 transform -translate-y-24 opacity-0 pointer-events-none z-50 flex items-center gap-3 w-[90%] max-w-sm">
-        <i data-lucide="alert-circle" class="w-5 h-5 shrink-0"></i>
+    <!-- Toast Notification (Native) -->
+    <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 bg-red-500 text-white px-5 py-3 rounded-xl shadow-xl transition-all duration-300 transform -translate-y-24 opacity-0 pointer-events-none z-[100] flex items-center gap-3 w-[90%] max-w-sm">
+        <i data-lucide="info" class="w-5 h-5 shrink-0"></i>
         <span id="toast-msg" class="text-sm font-semibold tracking-wide">Pesan</span>
     </div>
 
     <!-- Main Card -->
-    <div class="w-full max-w-md p-8 rounded-3xl shadow-2xl glass z-10">
+    <div class="w-full max-w-md p-8 rounded-3xl shadow-2xl glass z-10 relative">
+        <!-- Settings Button -->
+        <button onclick="setApiKey()" class="absolute top-6 right-6 text-gray-400 hover:text-blue-500 transition-colors" title="Pengaturan AI">
+            <i data-lucide="settings" class="w-6 h-6"></i>
+        </button>
+
         <div class="flex flex-col items-center mb-6">
-            <div class="bg-green-500 p-4 rounded-2xl shadow-lg mb-4">
+            <div class="bg-green-500 p-4 rounded-2xl shadow-lg mb-4 relative">
                 <i data-lucide="message-circle" class="text-white w-8 h-8"></i>
+                <div class="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1 border-2 border-white shadow-sm">
+                    <i data-lucide="bot" class="text-white w-3 h-3"></i>
+                </div>
             </div>
-            <h1 class="text-2xl font-bold text-gray-800">WhatsApp Direct</h1>
-            <p class="text-sm text-gray-500 mt-1">Chat tanpa simpan nomor</p>
+            <h1 class="text-2xl font-bold text-gray-800">WA Direct AI</h1>
+            <p class="text-sm text-gray-500 mt-1">Ekstrak otomatis pakai Vision AI</p>
         </div>
 
-        <div class="space-y-4">
-            <!-- Input Nomor -->
+        <div class="space-y-5">
+            <!-- Input Nomor & AI Tools -->
             <div>
-                <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Masukkan Nomor HP</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Target (Nomor HP / Foto Scan)</label>
+                
                 <div class="relative flex items-center">
-                    <input type="text" id="phone" placeholder="0812... atau +62 85..." class="w-full pl-4 pr-24 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all outline-none text-lg tracking-wide font-medium">
+                    <input type="text" id="phone" placeholder="0812... atau paste teks panjang" class="w-full pl-4 pr-12 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all outline-none text-lg tracking-wide font-medium">
                     <div class="absolute right-2 flex gap-1 items-center z-10">
-                        <button id="pasteBtn" class="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors flex items-center justify-center bg-white shadow-sm border border-gray-100" title="Paste">
-                            <i data-lucide="clipboard" class="w-5 h-5"></i>
-                        </button>
-                        <button id="clearBtn" class="hidden p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center bg-white shadow-sm border border-gray-100" title="Clear">
+                        <button id="clearBtn" class="hidden p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center bg-white shadow-sm border border-gray-100" title="Hapus">
                             <i data-lucide="x" class="w-5 h-5"></i>
                         </button>
                     </div>
                 </div>
+
+                <!-- Action Tools -->
+                <div class="grid grid-cols-3 gap-2 mt-3">
+                    <button id="smartPasteBtn" class="py-2.5 bg-white border border-gray-200 rounded-xl text-gray-600 hover:text-green-600 hover:bg-green-50 transition-all flex flex-col items-center gap-1 shadow-sm group">
+                        <i data-lucide="clipboard-paste" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">Paste Cerdas</span>
+                    </button>
+                    <button onclick="document.getElementById('cameraInput').click()" class="py-2.5 bg-white border border-gray-200 rounded-xl text-gray-600 hover:text-blue-500 hover:bg-blue-50 ai-glow transition-all flex flex-col items-center gap-1 shadow-sm group" title="Scan via Kamera">
+                        <i data-lucide="camera" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">AI Kamera</span>
+                    </button>
+                    <button onclick="document.getElementById('galleryInput').click()" class="py-2.5 bg-white border border-gray-200 rounded-xl text-gray-600 hover:text-blue-500 hover:bg-blue-50 ai-glow transition-all flex flex-col items-center gap-1 shadow-sm group" title="Scan via Galeri">
+                        <i data-lucide="image" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-[10px] font-bold uppercase tracking-wider">AI Galeri</span>
+                    </button>
+                </div>
+
+                <!-- Hidden Inputs for AI -->
+                <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="processImageWithAI(event)">
+                <input type="file" id="galleryInput" accept="image/*" class="hidden" onchange="processImageWithAI(event)">
             </div>
 
             <!-- Input Pesan -->
@@ -67,14 +102,14 @@
             <div id="error-box" class="hidden p-3 bg-red-100 text-red-600 text-sm rounded-lg text-center font-medium"></div>
 
             <!-- Tombol Aksi -->
-            <div class="flex gap-2">
+            <div class="flex gap-2 pt-2">
                 <button onclick="processWhatsApp(false)" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 group">
                     <span>Buka WA</span>
                     <i data-lucide="external-link" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
                 </button>
                 <button onclick="processWhatsApp(true)" class="flex-1 bg-amber-400 hover:bg-amber-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2" title="Pesan Pasrah Auto-Roast">
                     <span>Pesan Pasrah</span>
-                    <i data-lucide="bot" class="w-4 h-4"></i>
+                    <i data-lucide="flame" class="w-4 h-4"></i>
                 </button>
             </div>
             
@@ -93,7 +128,7 @@
         <p class="text-xl font-bold max-w-lg mb-8">Nomor ini terdeteksi memiliki riwayat menagih utang pinjol atau mantan yang ngajak balikan. Yakin ingin melanjutkan dengan mental baja?</p>
         <div class="flex gap-4">
             <button onclick="document.getElementById('ghostOverlay').classList.add('hidden')" class="px-6 py-3 bg-white text-red-600 font-bold rounded-lg hover:bg-gray-200">Batal (Sayangi Mental)</button>
-            <button onclick="executeWA(true)" class="px-6 py-3 bg-red-800 text-white font-bold rounded-lg hover:bg-red-900 border border-red-500">Gass, Saya Berani!</button>
+            <button onclick="executeWA(true)" class="px-6 py-3 bg-red-900 text-white font-bold rounded-lg hover:bg-black border border-red-500 transition-colors">Gass, Saya Berani!</button>
         </div>
     </div>
 
@@ -112,9 +147,7 @@
                 <thead>
                     <tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th></tr>
                 </thead>
-                <tbody id="excel-body">
-                    <!-- Digenerate via JS -->
-                </tbody>
+                <tbody id="excel-body"></tbody>
             </table>
         </div>
         <button onclick="document.getElementById('excelOverlay').classList.add('hidden')" class="absolute top-2 right-4 text-white text-xs opacity-50 hover:opacity-100">Tutup Pura-pura</button>
@@ -132,14 +165,13 @@
         const phoneInput = document.getElementById('phone');
         const messageInput = document.getElementById('message');
         const errorBox = document.getElementById('error-box');
-        const pasteBtn = document.getElementById('pasteBtn');
+        const smartPasteBtn = document.getElementById('smartPasteBtn');
         const clearBtn = document.getElementById('clearBtn');
         const toast = document.getElementById('toast');
         const toastMsg = document.getElementById('toast-msg');
         
-        let pendingWAUrl = ""; // Menyimpan URL jika terkena Ghost Detector
+        let pendingWAUrl = ""; 
 
-        // Database Pesan Pasrah (AI Auto-Roast)
         const pasrahMessages = [
             "Halo Kak, saya mau beli barangnya tapi dompet saya lagi tipis, apakah bisa dibayar pakai doa dan senyuman tulus?",
             "Permisi Kak, apakah harganya masih bisa dinego sampai saya nggak perlu nangis di pojokan?",
@@ -148,14 +180,151 @@
             "Kak, barangnya bagus banget! Boleh minta gratis aja nggak hitung-hitung sedekah jariyah?"
         ];
 
-        // --- CORE FUNCTIONS (Dari source asli) ---
+        // --- NATIVE TOAST ---
         function showToast(message, isError = true) {
             toastMsg.textContent = message;
-            toast.className = `fixed top-6 left-1/2 -translate-x-1/2 text-white px-5 py-3 rounded-xl shadow-xl transition-all duration-300 transform z-50 flex items-center gap-3 w-[90%] max-w-sm ${isError ? 'bg-red-500 shadow-red-500/20' : 'bg-green-500 shadow-green-500/20'} translate-y-0 opacity-100`;
+            toast.className = `fixed top-6 left-1/2 -translate-x-1/2 text-white px-5 py-3 rounded-xl shadow-xl transition-all duration-300 transform z-[100] flex items-center gap-3 w-[90%] max-w-sm ${isError ? 'bg-red-500 shadow-red-500/20' : 'bg-green-500 shadow-green-500/20'} translate-y-0 opacity-100`;
             setTimeout(() => toast.classList.replace('translate-y-0', '-translate-y-24'), 3000);
             setTimeout(() => toast.classList.replace('opacity-100', 'opacity-0'), 3000);
         }
 
+        // --- MANAJEMEN API KEY ---
+        function setApiKey() {
+            const currentKey = localStorage.getItem('wa_vision_key') || '';
+            Swal.fire({
+                title: 'Pengaturan Vision AI',
+                text: 'Masukkan Gemini API Key Anda untuk mengaktifkan fitur scan nomor HP dari Foto / Kamera.',
+                input: 'text',
+                inputValue: currentKey,
+                inputPlaceholder: 'AIzaSy...',
+                showCancelButton: true,
+                confirmButtonText: 'Simpan',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#3b82f6'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.setItem('wa_vision_key', result.value.trim());
+                    Swal.fire('Tersimpan!', 'API Key berhasil disimpan di memori perangkat.', 'success');
+                }
+            });
+        }
+
+        // --- FITUR 1: PASTE CERDAS (REGEX EXTRACTOR) ---
+        smartPasteBtn.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                
+                // Hilangkan spasi, strip, kurung agar pencarian regex akurat
+                const cleanText = text.replace(/[\s\-\(\)]/g, '');
+                
+                // Cari pola nomor Indonesia: +62, 62, atau 0 diikuti angka 8
+                const phoneMatch = cleanText.match(/(?:\+62|62|0)8[0-9]{6,12}/);
+                
+                if (phoneMatch) {
+                    phoneInput.value = phoneMatch[0];
+                    clearBtn.classList.remove('hidden');
+                    errorBox.classList.add('hidden');
+                    showToast('Nomor berhasil diekstrak dari teks!', false);
+                } else {
+                    showToast('Tidak ditemukan nomor HP di clipboard', true);
+                }
+            } catch (err) {
+                showToast('Gagal membaca clipboard. Coba ketik manual.', true);
+            }
+        });
+
+        // --- FITUR 2: AI VISION OCR (KAMERA & GALERI) ---
+        const compressImage = (file) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    const MAX_WIDTH = 800;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    resolve(dataUrl.split(',')[1]); 
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        };
+
+        async function processImageWithAI(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const apiKey = localStorage.getItem('wa_vision_key');
+            if (!apiKey) {
+                setApiKey();
+                event.target.value = '';
+                return;
+            }
+
+            // Reset input file agar bisa memilih gambar yang sama lagi
+            event.target.value = '';
+
+            Swal.fire({
+                title: 'Menganalisis Gambar...',
+                text: 'AI sedang mengekstrak nomor HP',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            try {
+                const base64Data = await compressImage(file);
+                const prompt = "Temukan satu nomor telepon seluler atau WhatsApp Indonesia di dalam gambar ini (biasanya diawali 08, 62, atau +62). HANYA balas dengan deretan angka tersebut secara langsung tanpa spasi, tanpa strip, tanpa simbol, dan tanpa huruf apapun (misal: 081234567890). Jika kamu sama sekali tidak menemukan nomor HP, balas KOSONG.";
+
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            { inlineData: { mimeType: "image/jpeg", data: base64Data } }
+                        ]
+                    }]
+                };
+
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(url, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) throw new Error(result.error?.message || "API menolak gambar.");
+
+                const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (responseText) {
+                    const cleanOutput = responseText.replace(/[^0-9\+]/g, '');
+                    if (cleanOutput && cleanOutput.length >= 9) {
+                        phoneInput.value = cleanOutput;
+                        clearBtn.classList.remove('hidden');
+                        Swal.fire('Berhasil!', `Nomor ditemukan: ${cleanOutput}`, 'success');
+                    } else {
+                        throw new Error("AI tidak mendeteksi nomor HP yang valid di gambar tersebut.");
+                    }
+                } else {
+                    throw new Error("Respon AI kosong.");
+                }
+
+            } catch (error) {
+                Swal.fire('Gagal Membaca', error.message, 'error');
+            }
+        }
+
+
+        // --- LOGIKA UTAMA WA DIRECT ---
         phoneInput.addEventListener('input', function() {
             this.value = this.value.replace(/[^0-9\+]/g, '').substring(0, 15);
             clearBtn.classList.toggle('hidden', this.value.length === 0);
@@ -176,7 +345,6 @@
             return cleaned;
         }
 
-        // --- FITUR BARU: Riwayat ---
         function loadHistory() {
             const history = JSON.parse(localStorage.getItem('waHistory') || '[]');
             const container = document.getElementById('history-container');
@@ -185,7 +353,7 @@
             if (history.length > 0) {
                 container.classList.remove('hidden');
                 list.innerHTML = history.map(num => `
-                    <button onclick="setFromHistory('${num}')" class="text-xs bg-gray-200 hover:bg-green-100 hover:text-green-700 px-3 py-1 rounded-full text-gray-700 transition-colors">
+                    <button onclick="setFromHistory('${num}')" class="text-xs bg-gray-200 hover:bg-green-100 hover:text-green-700 px-3 py-1 rounded-full text-gray-700 transition-colors shadow-sm">
                         +${num}
                     </button>
                 `).join('');
@@ -199,25 +367,23 @@
 
         function saveHistory(num) {
             let history = JSON.parse(localStorage.getItem('waHistory') || '[]');
-            history = history.filter(h => h !== num); // Hapus duplikat
-            history.unshift(num); // Taruh di depan
-            if (history.length > 3) history.pop(); // Batasi 3
+            history = history.filter(h => h !== num); 
+            history.unshift(num); 
+            if (history.length > 3) history.pop(); 
             localStorage.setItem('waHistory', JSON.stringify(history));
             loadHistory();
         }
 
-        // --- FITUR BARU: WhatsApp Processor & Ghost Detector ---
         function processWhatsApp(isRoast = false) {
             const finalNumber = cleanPhoneNumber(phoneInput.value);
             errorBox.classList.add('hidden');
 
-            if (finalNumber.length < 10) {
+            if (finalNumber.length < 9) {
                 errorBox.textContent = "Nomor terlalu pendek atau tidak valid.";
                 errorBox.classList.remove('hidden');
                 return;
             }
 
-            // Setup Teks
             let textToSend = messageInput.value;
             if (isRoast) {
                 textToSend = pasrahMessages[Math.floor(Math.random() * pasrahMessages.length)];
@@ -231,8 +397,8 @@
             pendingWAUrl = waUrl;
             saveHistory(finalNumber);
 
-            // GHOST CALLER DETECTOR L0GIC (15% Chance to trigger gacha)
-            if (Math.random() < 0.15) {
+            // GHOST CALLER DETECTOR LOGIC (10% Chance)
+            if (Math.random() < 0.10) {
                 document.getElementById('ghostOverlay').classList.remove('hidden');
                 document.getElementById('ghostOverlay').classList.add('flex');
             } else {
@@ -250,11 +416,10 @@
             }
         }
 
-        // --- FITUR BARU: Auto-Panic Escape Button ---
+        // --- FITUR AUTO-PANIC ---
         const panicBtn = document.getElementById('panicBtn');
         const excelOverlay = document.getElementById('excelOverlay');
 
-        // Generate Dummy Excel Rows
         let excelHTML = '';
         for(let i=1; i<=30; i++) {
             excelHTML += `<tr><td class="row-num">${i}</td><td>Q${i%4+1} 2026</td><td>${Math.floor(Math.random()*90000)+10000}</td><td>Laporan Anggaran ${i}</td><td>-</td><td>Pending</td><td></td></tr>`;
@@ -266,13 +431,10 @@
         }
 
         panicBtn.addEventListener('click', triggerPanic);
-        
-        // Tekan Esc untuk panik
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') triggerPanic();
         });
 
-        // Initialize
         loadHistory();
     </script>
 </body>
